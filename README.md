@@ -3,7 +3,7 @@ Toto je repository určené na týmovou práci a spolupráci našeho týmu pro p
 
 
 
-▪ Dokumenty (viz seznam v tabulce 5 níže).
+▪ Dokumenty (viz seznam v tabulka níže).
 
 ▪ Grafika (například logo týmu, BMC, ERD apod.).
 
