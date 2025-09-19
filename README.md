@@ -1,4 +1,4 @@
-# RSP_2025
+# RSP_2025_ZáhonAStrom
 Toto je repository určené na týmovou práci a spolupráci našeho týmu pro předmět RSP v 3. semestru na VŠPJ
 
 TESTY vždy do středy v 12:00: https://moodle.vspj.cz/mod/page/view.php?id=353691
