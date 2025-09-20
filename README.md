@@ -10,7 +10,7 @@ https://moodle.vspj.cz/mod/page/view.php?id=353691
 EXCEL na zapisování hodin: <br/>
 https://vspj-my.sharepoint.com/:x:/g/personal/jahoda06_student_vspj_cz/EXD8j4p9c05NmireQdTCTe4Bp0ZtHxAmRHOo-Kf3FApuIQ?e=MCz0an
 
-ZADÁNÍ PROJEKTU: <br/>
+ZADÁNÍ ZÁVĚREČNÉHO PROJEKTU: <br/>
 https://moodle.vspj.cz/pluginfile.php/518253/mod_resource/content/4/RSP_zadani_projektu_2025_JV1.pdf
 
 DOKUMENTACE PŘEDMĚTU: <br/>
