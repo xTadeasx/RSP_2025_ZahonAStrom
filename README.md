@@ -2,19 +2,20 @@
 Toto je repository určené na týmovou práci a spolupráci našeho týmu pro předmět RSP v 3. semestru na VŠPJ
 
 MOODLE: <br/>
-https://moodle.vspj.cz/course/view.php?id=203424
+<a href="https://moodle.vspj.cz/course/view.php?id=203424" target="_blank">https://moodle.vspj.cz/course/view.php?id=203424</a>
 
 TESTY vždy do středy v 12:00: <br/>
-https://moodle.vspj.cz/mod/page/view.php?id=353691
+<a href="https://moodle.vspj.cz/mod/page/view.php?id=353691" target="_blank">https://moodle.vspj.cz/mod/page/view.php?id=353691</a>
 
 EXCEL na zapisování hodin: <br/>
-https://vspj-my.sharepoint.com/:x:/g/personal/jahoda06_student_vspj_cz/EXD8j4p9c05NmireQdTCTe4Bp0ZtHxAmRHOo-Kf3FApuIQ?e=MCz0an
+<a href="https://vspj-my.sharepoint.com/:x:/g/personal/jahoda06_student_vspj_cz/EXD8j4p9c05NmireQdTCTe4Bp0ZtHxAmRHOo-Kf3FApuIQ?e=MCz0an" target="_blank">https://vspj-my.sharepoint.com/:x:/g/personal/jahoda06_student_vspj_cz/EXD8j4p9c05NmireQdTCTe4Bp0ZtHxAmRHOo-Kf3FApuIQ?e=MCz0an</a>
 
 ZADÁNÍ ZÁVĚREČNÉHO PROJEKTU: <br/>
-https://moodle.vspj.cz/pluginfile.php/518253/mod_resource/content/4/RSP_zadani_projektu_2025_JV1.pdf
+<a href="https://moodle.vspj.cz/pluginfile.php/518253/mod_resource/content/4/RSP_zadani_projektu_2025_JV1.pdf" target="_blank">https://moodle.vspj.cz/pluginfile.php/518253/mod_resource/content/4/RSP_zadani_projektu_2025_JV1.pdf</a>
 
 DOKUMENTACE PŘEDMĚTU: <br/>
-https://moodle.vspj.cz/pluginfile.php/518298/mod_resource/content/11/xRSP_pruvodce_2025_1.pdf
+<a href="https://moodle.vspj.cz/pluginfile.php/518298/mod_resource/content/11/xRSP_pruvodce_2025_1.pdf" target="_blank">https://moodle.vspj.cz/pluginfile.php/518298/mod_resource/content/11/xRSP_pruvodce_2025_1.pdf</a>
+
 
 <h2>📂 Projektová struktura</h2>
 
