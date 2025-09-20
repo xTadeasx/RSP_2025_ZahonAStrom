@@ -16,10 +16,30 @@ https://moodle.vspj.cz/pluginfile.php/518253/mod_resource/content/4/RSP_zadani_p
 DOKUMENTACE PŘEDMĚTU: <br/>
 https://moodle.vspj.cz/pluginfile.php/518298/mod_resource/content/11/xRSP_pruvodce_2025_1.pdf
 
-▪ Dokumenty (viz seznam v tabulka níže).
+<h2>📂 Projektová struktura</h2>
 
-▪ Grafika (například logo týmu, BMC, ERD apod.).
+<h3>📄 Dokumenty</h3>
+<p>Viz seznam v tabulce níže.</p>
 
-▪ Ostatní (např. kód nebo interní produktově-technická dokumentace). Tato složka musí existovat, ale může zůstat prázdná. Procesní dokumenty se ukládají v Teams anebo ve ScrumDesku.
+<h3>🎨 Grafika</h3>
+<p>Například:</p>
+<ul>
+  <li>Logo týmu</li>
+  <li>Business Model Canvas (BMC)</li>
+  <li>ERD diagramy</li>
+</ul>
 
-<img width="584" height="668" alt="image" src="https://github.com/user-attachments/assets/fa8a762e-87a6-4a4d-be15-26b3b85f48e1" />
+<h3>🗂️ Ostatní</h3>
+<p>Např. kód nebo interní produktově-technická dokumentace.</p>
+<p><strong>Poznámka:</strong> Tato složka musí existovat, ale může zůstat prázdná. Procesní dokumenty se ukládají v <strong>Teams</strong> nebo ve <strong>ScrumDesku</strong>.</p>
+
+<h3>📊 Tabulky</h3>
+<div align="center">
+  <img
+    src="https://github.com/user-attachments/assets/fa8a762e-87a6-4a4d-be15-26b3b85f48e1"
+    alt="Schematické znázornění projektové struktury (logo, BMC, ERD)"
+    width="584"
+    height="668">
+</div>
+
+
