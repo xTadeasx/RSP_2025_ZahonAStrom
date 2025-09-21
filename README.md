@@ -37,9 +37,9 @@ DOKUMENTACE PŘEDMĚTU: <br/>
 <p>Např. kód nebo interní produktově-technická dokumentace.</p>
 <p><strong>Poznámka:</strong> Tato složka musí existovat, ale může zůstat prázdná. Procesní dokumenty se ukládají v <strong>Teams</strong> nebo ve <strong>ScrumDesku</strong>.</p>
 
-<h3>📊 Tabulky</h3>
+<h2>📊 Tabulky</h2>
 <div align="center">
-  <h2>Tab. 5</h2>
+  <h3>Tab. 5</h3>
   <img
     src="https://github.com/user-attachments/assets/fa8a762e-87a6-4a4d-be15-26b3b85f48e1"
     alt="Schematické znázornění projektové struktury (logo, BMC, ERD)"
@@ -48,7 +48,7 @@ DOKUMENTACE PŘEDMĚTU: <br/>
 </div>
 
 <div align="center">
-  <h2>Harmonogram</h2>
+  <h3>Harmonogram</h3>
   <img
     src="https://github.com/user-attachments/assets/f89cfc8c-dea6-457f-a030-3e2829f643a5"
     alt="Schematické znázornění projektové struktury (logo, BMC, ERD)"
@@ -57,7 +57,7 @@ DOKUMENTACE PŘEDMĚTU: <br/>
 </div>
 
 <div align="center">
-  <h2>Termíny absolvování průběžných on-line testů</h2>
+  <h3>Termíny absolvování průběžných on-line testů</h3>
   <img
     src="https://github.com/user-attachments/assets/9f7c14f6-a689-4f84-8894-8995627f6db9" 
     alt="Schematické znázornění projektové struktury (logo, BMC, ERD)"
