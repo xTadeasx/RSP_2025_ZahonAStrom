@@ -7,6 +7,9 @@ MOODLE: <br/>
 TEAMS: <br/>
 <a href="https://teams.microsoft.com/l/channel/19%3AStIszp8EGZ_UUL1oqroEIQw0p2Qg9p5JXVrtKANIEDQ1%40thread.tacv2/General?groupId=7d4ca3c7-9d12-42ad-9dd0-95f98e4b49ab&tenantId=97f201cb-6533-4746-96aa-dd521e74b94f" target="_blank">https://teams.microsoft.com/l/channel/19%3AStIszp8EGZ_UUL1oqroEIQw0p2Qg9p5JXVrtKANIEDQ1%40thread.tacv2/General?groupId=7d4ca3c7-9d12-42ad-9dd0-95f98e4b49ab&tenantId=97f201cb-6533-4746-96aa-dd521e74b94f</a>
 
+SCRUMDESK: <br/>
+<a href="https://app.scrumdesk.com/#/projects" target="_blank">https://app.scrumdesk.com/#/projects</a>
+
 TESTY (vždy do středy v 12:00): <br/>
 <a href="https://moodle.vspj.cz/mod/page/view.php?id=353691" target="_blank">https://moodle.vspj.cz/mod/page/view.php?id=353691</a>
 
