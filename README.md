@@ -14,7 +14,7 @@ TESTY (vždy do středy v 12:00): <br/>
 <a href="https://moodle.vspj.cz/mod/page/view.php?id=353691" target="_blank">https://moodle.vspj.cz/mod/page/view.php?id=353691</a>
 
 EXCEL (na zapisování hodin): <br/>
-<a href="https://vspj-my.sharepoint.com/:x:/g/personal/jahoda06_student_vspj_cz/EXD8j4p9c05NmireQdTCTe4Bp0ZtHxAmRHOo-Kf3FApuIQ?e=MCz0an" target="_blank">https://vspj-my.sharepoint.com/:x:/g/personal/jahoda06_student_vspj_cz/EXD8j4p9c05NmireQdTCTe4Bp0ZtHxAmRHOo-Kf3FApuIQ?e=MCz0an</a>
+<a href="https://vspj.sharepoint.com/:x:/s/SP2526-Zhonastrom/EaV84G2Fb_hJkVPODHg3_S4BE2sKNHjzThYT6s0YsFMMYQ?e=q7FDpz" target="_blank">https://vspj.sharepoint.com/:x:/s/SP2526-Zhonastrom/EaV84G2Fb_hJkVPODHg3_S4BE2sKNHjzThYT6s0YsFMMYQ?e=q7FDpz</a>
 
 ZADÁNÍ ZÁVĚREČNÉHO PROJEKTU: <br/>
 <a href="https://moodle.vspj.cz/pluginfile.php/518253/mod_resource/content/4/RSP_zadani_projektu_2025_JV1.pdf" target="_blank">https://moodle.vspj.cz/pluginfile.php/518253/mod_resource/content/4/RSP_zadani_projektu_2025_JV1.pdf</a>
