@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/notAccess.php'; // !!! KOPÍROVAT DO KAŽDÉ CHRÁNĚNÉ STRÁNKY !!!
 require_once __DIR__ . '/../Database/dataControl.php'; // Připojení k DB a funkce pro práci s daty 
+require_once __DIR__ . '/sendEmail.php'; // Funkce pro odesílání emailů
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     switch ($_POST['action']) {
@@ -36,8 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: ../Frontend/index.php');
             break;
         case 'writerRegister':
-
-
+            $text = $_POST['text'] ?? '';
+            sendEmail('rspzahonastrom@gmail.com', 'Žádost o pozici autora', $text);
+            header('Location: ../Frontend/user.php');
+            break;
     }
 
 
