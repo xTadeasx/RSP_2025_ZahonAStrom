@@ -39,8 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         case 'writerRegister':
             $text = $_POST['text'] ?? '';
-            sendEmail('rspzahonastrom@gmail.com', 'Žádost o pozici autora', $text);
+            sendEmail('rspzahonastrom@gmail.com', 'Zadost o pozici autora', $text);
             header('Location: ../Frontend/user.php');
+            break;
+        default:
+            $_SESSION['error'] = "Neznámá akce: " . $_POST['action'];
+            header('');
             break;
     }
 
