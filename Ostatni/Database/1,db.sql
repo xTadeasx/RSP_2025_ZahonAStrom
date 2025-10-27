@@ -11,21 +11,25 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
-
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
 
---
--- Databáze: `rsp`
---
-
+-- --------------------------------------------------------
+-- Vytvoření databáze
 -- --------------------------------------------------------
 
---
+CREATE DATABASE IF NOT EXISTS `rsp` CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci;
+USE `rsp`;
+
+-- --------------------------------------------------------
+-- Databáze: `rsp`
+-- --------------------------------------------------------
+
+-- --------------------------------------------------------
 -- Struktura tabulky `posts`
---
+-- --------------------------------------------------------
 
 CREATE TABLE `posts` (
   `id` int(11) NOT NULL,
@@ -40,10 +44,8 @@ CREATE TABLE `posts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
 
 -- --------------------------------------------------------
-
---
 -- Struktura tabulky `users`
---
+-- --------------------------------------------------------
 
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
@@ -58,19 +60,17 @@ CREATE TABLE `users` (
   `updated_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
 
---
+-- --------------------------------------------------------
 -- Vypisuji data pro tabulku `users`
---
+-- --------------------------------------------------------
 
 INSERT INTO `users` (`id`, `username`, `password`, `email`, `phone`, `role_id`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
 (2, 'jahoda', '$2y$10$fEofEot/Ql.I484Sz6GTt.BN2MHP6OugteXcLBGL5aHVPURe6RlNK', '', '', NULL, NULL, NULL, NULL, NULL),
 (4, 'tadeas', '$2y$10$UUPMB2jRJtoXhH6DLgyNDuBMeL9kqT8IhhN/ck.aGUO04JtAqpU4u', 'jahoda.tadeas@gmail.com', '123123', 1, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
-
---
 -- Struktura tabulky `users_roles`
---
+-- --------------------------------------------------------
 
 CREATE TABLE `users_roles` (
   `id` int(11) NOT NULL,
@@ -81,9 +81,9 @@ CREATE TABLE `users_roles` (
   `updated_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
 
---
+-- --------------------------------------------------------
 -- Vypisuji data pro tabulku `users_roles`
---
+-- --------------------------------------------------------
 
 INSERT INTO `users_roles` (`id`, `role`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
 (1, 'Administrátor', NULL, NULL, NULL, NULL),
@@ -94,10 +94,8 @@ INSERT INTO `users_roles` (`id`, `role`, `created_at`, `updated_at`, `created_by
 (6, 'Čtenář', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
-
---
 -- Struktura tabulky `workflow`
---
+-- --------------------------------------------------------
 
 CREATE TABLE `workflow` (
   `id` int(11) NOT NULL,
@@ -108,13 +106,10 @@ CREATE TABLE `workflow` (
   `updated_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
 
---
+-- --------------------------------------------------------
 -- Indexy pro exportované tabulky
---
+-- --------------------------------------------------------
 
---
--- Indexy pro tabulku `posts`
---
 ALTER TABLE `posts`
   ADD PRIMARY KEY (`id`),
   ADD KEY `state` (`state`),
@@ -122,89 +117,57 @@ ALTER TABLE `posts`
   ADD KEY `created_by` (`created_by`),
   ADD KEY `updated_by` (`updated_by`);
 
---
--- Indexy pro tabulku `users`
---
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD KEY `role_id` (`role_id`);
 
---
--- Indexy pro tabulku `users_roles`
---
 ALTER TABLE `users_roles`
   ADD PRIMARY KEY (`id`),
   ADD KEY `updated_by` (`updated_by`),
   ADD KEY `created_by` (`created_by`);
 
---
--- Indexy pro tabulku `workflow`
---
 ALTER TABLE `workflow`
   ADD PRIMARY KEY (`id`),
   ADD KEY `created_by` (`created_by`),
   ADD KEY `updated_by` (`updated_by`);
 
---
+-- --------------------------------------------------------
 -- AUTO_INCREMENT pro tabulky
---
+-- --------------------------------------------------------
 
---
--- AUTO_INCREMENT pro tabulku `posts`
---
 ALTER TABLE `posts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT pro tabulku `users`
---
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
---
--- AUTO_INCREMENT pro tabulku `users_roles`
---
 ALTER TABLE `users_roles`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
---
--- AUTO_INCREMENT pro tabulku `workflow`
---
 ALTER TABLE `workflow`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- Omezení pro exportované tabulky
---
+-- --------------------------------------------------------
+-- Omezení pro tabulky
+-- --------------------------------------------------------
 
---
--- Omezení pro tabulku `posts`
---
 ALTER TABLE `posts`
   ADD CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`state`) REFERENCES `workflow` (`id`),
   ADD CONSTRAINT `posts_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `posts_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `posts_ibfk_4` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`);
 
---
--- Omezení pro tabulku `users`
---
 ALTER TABLE `users`
   ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `users_roles` (`id`);
 
---
--- Omezení pro tabulku `users_roles`
---
 ALTER TABLE `users_roles`
   ADD CONSTRAINT `users_roles_ibfk_1` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `users_roles_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
 
---
--- Omezení pro tabulku `workflow`
---
 ALTER TABLE `workflow`
   ADD CONSTRAINT `workflow_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `workflow_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`);
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
