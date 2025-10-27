@@ -23,13 +23,15 @@
 <body>
     <h1>Login</h1>
     <form action="../Backend/login.php" method="POST">
+        <input type="hidden" name="action" value="login">
+        
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required>
         <br><br>
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" required>
         <br><br>
-        <input type="hidden" name="action" value="login">
+        
         <button type="submit">Login</button>
     </form>
 
@@ -37,11 +39,13 @@
      <!-- Nějak udělat aby u každého inputu co má required tak ať se přidá '*' mělo by to jít nějak přes javascript -->
     <h1>Register</h1>
     <form action="../Backend/login.php" method="POST">
+        <input type="hidden" name="action" value="register">
+
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required>
         <br><br>
         <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
+        <input type="password" id="password" name="password" minlength="3"required>
         <br><br>
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" required>
@@ -49,7 +53,7 @@
         <label for="phone">phone:</label>
         <input type="text" id="phone" name="phone" required>
         <br><br>
-        <input type="hidden" name="action" value="register">
+        
         <button type="submit">Register</button>
     </form>
 </body>

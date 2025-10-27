@@ -23,12 +23,15 @@
 <body>
     <H1>EDIT Uzivatele ucet</H1>
     <form action="../Backend/userControl.php" method="POST">
+        <input type="hidden" name="action" value="edit_user">
+
         <input type="hidden" name="id" value="<?php echo htmlspecialchars($_SESSION['user']['id'] ?? ''); ?>">
+
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($_SESSION['user']['username'] ?? ''); ?>"  required>
         <br><br>
         <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
+        <input type="password" id="password" name="password" minlength="3" required>
         <br><br>
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($_SESSION['user']['email'] ?? ''); ?>" required>
@@ -36,8 +39,16 @@
         <label for="phone">phone:</label>
         <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($_SESSION['user']['phone'] ?? ''); ?>" required>
         <br><br>
-        <input type="hidden" name="action" value="edit_user">
+
         <button type="submit">Uložit změny</button>
+    </form>
+    <br><br>
+    <form action="../Backend/userControl.php" method="POST">
+        <input type="hidden" name="action" value="writerRegister">
+        <input type="text" id="text" name="text" placeholder="Zadejte důvod proč chcete být autorem" minlength="10" required>
+        <br>
+
+        <button type="submit">Přihlásit se k pozici autora</button>
     </form>
 </body>
 </html>
