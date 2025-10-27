@@ -16,10 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (validateUser($username, $password)) {
             // Úspěšné přihlášení
             $user = select('users', 'id, email, phone', "username = '$username'")[0];
-            $_SESSION['user_username'] = $username;
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_email'] = $user['email'];
-            $_SESSION['user_phone'] = $user['phone'];
+            $_SESSION['user']['username'] = $username;
+            $_SESSION['user']['id'] = $user['id'];
+            $_SESSION['user']['email'] = $user['email'];
+            $_SESSION['user']['phone'] = $user['phone'];
             $_SESSION['success'] = "Přihlášení bylo úspěšné.";
             header('Location: ../Frontend/index.php'); // Přesměrování na index
             exit();

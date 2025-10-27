@@ -24,8 +24,8 @@
     <!-- Tomášovo králoství -->
      <h1>
         <?php
-        if(isset($_SESSION['user_username'])) {
-            echo "Přihlášen jako: " . $_SESSION['user_username'];
+        if(isset($_SESSION['user']['username'])) {
+            echo "Přihlášen jako: " . $_SESSION['user']['username'];
             ?>
                 <a href="../Frontend/user.php">Účet uživatele</a>
                 <br>

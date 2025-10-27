@@ -22,19 +22,19 @@
 </head>
 <body>
     <H1>EDIT Uzivatele ucet</H1>
-    <form action="../" method="POST">
-        <input type="hidden" name="id" value="<?php echo htmlspecialchars($_SESSION['user_id'] ?? ''); ?>">
+    <form action="../Backend/userControl.php" method="POST">
+        <input type="hidden" name="id" value="<?php echo htmlspecialchars($_SESSION['user']['id'] ?? ''); ?>">
         <label for="username">Username:</label>
-        <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($_SESSION['user_username'] ?? ''); ?>"  required>
+        <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($_SESSION['user']['username'] ?? ''); ?>"  required>
         <br><br>
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" required>
         <br><br>
         <label for="email">Email:</label>
-        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($_SESSION['user_email'] ?? ''); ?>" required>
+        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($_SESSION['user']['email'] ?? ''); ?>" required>
         <br><br>
         <label for="phone">phone:</label>
-        <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($_SESSION['user_phone'] ?? ''); ?>" required>
+        <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($_SESSION['user']['phone'] ?? ''); ?>" required>
         <br><br>
         <input type="hidden" name="action" value="edit_user">
         <button type="submit">Uložit změny</button>

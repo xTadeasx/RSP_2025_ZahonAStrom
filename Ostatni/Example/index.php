@@ -1,3 +1,4 @@
+<!-- !!! ČISTĚ PRO NÁS ABY JSME VIDĚLI JAK POUŽÍVAT PŘÍKAZY DO DATABÁZE -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
