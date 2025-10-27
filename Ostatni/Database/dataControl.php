@@ -81,3 +81,57 @@ function delete($table, $where)
 
     return true;
 }
+
+// ✅ Validate user credentials
+function validateUser($username, $password)
+{
+    global $conn;
+
+    $sql = "SELECT password FROM users WHERE username = ?";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        die("Error preparing statement: " . $conn->error);
+    }
+
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $stmt->bind_result($hashedPassword);
+    if ($stmt->fetch()) {
+        $stmt->close();
+        return password_verify($password, $hashedPassword);
+    } else {
+        $stmt->close();
+        return false;
+    }
+}
+
+// ✅ Register new user
+function registerUser($username, $password)
+{
+    global $conn;
+
+    // Check if username already exists
+    $sql = "SELECT id FROM users WHERE username = ?";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        die("Error preparing statement: " . $conn->error);
+    }
+
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $stmt->store_result();
+    if ($stmt->num_rows > 0) {
+        // Username already exists
+        $stmt->close();
+        return false;
+    }
+    $stmt->close();
+
+    // Insert new user
+    $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+    $data = [
+        'username' => $username,
+        'password' => $hashedPassword
+    ];
+    return insert($data, 'users');
+}

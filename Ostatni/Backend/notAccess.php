@@ -3,12 +3,13 @@
 
 // !!! KOPÍROVAT DO KAŽDÉ CHRÁNĚNÉ STRÁNKY !!!
 session_start();
-if (!isset($_SESSION['name'])) {
-    $_SESSION['flash'] = "Musíte být přihlášeni.";
-    header("Location: ../Frontend/index.php");
-    exit();
+if(!$_POST['password']) {
+    if (!isset($_SESSION['username'])) {
+        $_SESSION['error'] = "Musíte být přihlášeni.";
+        header("Location: ../Frontend/index.php");
+        exit();
+    }
 }
-
 // Tadeášovo králoství
 
 ?>
