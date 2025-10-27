@@ -106,7 +106,7 @@ function validateUser($username, $password)
 }
 
 // ✅ Register new user
-function registerUser($username, $password)
+function registerUser($username, $password, $email = null, $phone = null)
 {
     global $conn;
 
@@ -131,7 +131,42 @@ function registerUser($username, $password)
     $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
     $data = [
         'username' => $username,
-        'password' => $hashedPassword
+        'password' => $hashedPassword,
+        'email' => $email,
+        'phone' => $phone,
+        'role_id' => 1 // role_id pro čtenáře
     ];
     return insert($data, 'users');
+}
+
+function createUserRoles(){
+    $data = [
+        'role' => 'Administrátor'
+    ];
+    insert($data, 'users_roles');
+
+    $data = [
+        'role' => 'Šéfredaktor'
+    ];
+    insert($data, 'users_roles');
+
+    $data = [
+        'role' => 'Recenzent'
+    ];
+    insert($data, 'users_roles');
+
+    $data = [
+        'role' => 'Redaktor'
+    ];
+    insert($data, 'users_roles');
+    
+    $data = [
+        'role' => 'Autor'
+    ];
+    insert($data, 'users_roles');
+
+    $data = [
+        'role' => 'Čtenář'
+    ];
+    insert($data, 'users_roles');
 }

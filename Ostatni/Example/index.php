@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -81,6 +80,7 @@
 
 <span class="comment">// Select</span>
 <span class="variable">$users</span> = <span class="func">select</span>(<span class="string">'users'</span>);
+<span class="variable">$readerRole</span> = <span class="func">select</span>(<span class="string">'users_roles'</span>, <span class="string">'*'</span>, <span class="string">"role = 'Čtenář'"</span>);
 
 <span class="comment">// Update</span>
 <span class="func">update</span>(<span class="string">'users'</span>, [<span class="string">'surname'</span> => <span class="string">'Smith'</span>], <span class="string">"name = 'John'"</span>);

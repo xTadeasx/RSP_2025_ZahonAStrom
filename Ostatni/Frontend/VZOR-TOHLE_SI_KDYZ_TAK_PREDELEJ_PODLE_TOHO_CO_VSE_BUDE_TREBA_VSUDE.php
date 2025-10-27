@@ -21,25 +21,6 @@
     <title>RSP - Záhon a Strom</title>
 </head>
 <body>
-    <!-- Tomášovo králoství -->
-     <h1>
-        <?php
-        if(isset($_SESSION['user_username'])) {
-            echo "Přihlášen jako: " . $_SESSION['user_username'];
-            ?>
-                <a href="../Frontend/user.php">Účet uživatele</a>
-                <br>
-                <form action="../Backend/userControl.php" method="post">
-                    <button type="submit" name="action" value="logOut">Odhlásit se</button>
-                </form>
-            <?php
-
-        } 
-
-        ?>
-        <br>
-        <a href="../Frontend/login.php">Přihlášení/registrace</a>
-
-     </h1>
+    
 </body>
 </html>

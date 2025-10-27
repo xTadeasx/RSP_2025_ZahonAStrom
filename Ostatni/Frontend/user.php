@@ -21,36 +21,23 @@
     <title>RSP - Záhon a Strom</title>
 </head>
 <body>
-    <h1>Login</h1>
-    <form action="../Backend/login.php" method="POST">
+    <H1>EDIT Uzivatele ucet</H1>
+    <form action="../" method="POST">
+        <input type="hidden" name="id" value="<?php echo htmlspecialchars($_SESSION['user_id'] ?? ''); ?>">
         <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <br><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <br><br>
-        <input type="hidden" name="action" value="login">
-        <button type="submit">Login</button>
-    </form>
-
-    <br><br>
-     <!-- Nějak udělat aby u každého inputu co má required tak ať se přidá '*' mělo by to jít nějak přes javascript -->
-    <h1>Register</h1>
-    <form action="../Backend/login.php" method="POST">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
+        <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($_SESSION['user_username'] ?? ''); ?>"  required>
         <br><br>
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" required>
         <br><br>
         <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
+        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($_SESSION['user_email'] ?? ''); ?>" required>
         <br><br>
         <label for="phone">phone:</label>
-        <input type="text" id="phone" name="phone" required>
+        <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($_SESSION['user_phone'] ?? ''); ?>" required>
         <br><br>
-        <input type="hidden" name="action" value="register">
-        <button type="submit">Register</button>
+        <input type="hidden" name="action" value="edit_user">
+        <button type="submit">Uložit změny</button>
     </form>
 </body>
 </html>
