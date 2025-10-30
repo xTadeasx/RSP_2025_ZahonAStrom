@@ -13,6 +13,7 @@ function sendEmail($to, $subject, $text)
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
         $mail->Username   = 'jahoda.tadeas@gmail.com';
+        // Je třeba přidat si heslo, pošlu vám ho na teamsy
         $mail->Password   = '';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->SMTPOptions = [
