@@ -12,7 +12,7 @@
         <input type="password" id="password" name="password" required>
         
         <div class="actions">
-            <button class="btn border" type="submit">Login</button>
+            <button class="btn" type="submit">Login</button>
         </div>
     </form>
 
@@ -32,7 +32,7 @@
         <input type="text" id="phone" name="phone" required>
         
         <div class="actions">
-            <button class="btn border" type="submit">Register</button>
+            <button class="btn" type="submit">Register</button>
         </div>
     </form>
 <?php require_once __DIR__ . '/Include/footer.php'; ?>
