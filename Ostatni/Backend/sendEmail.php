@@ -2,19 +2,22 @@
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+//O TENTO SOUBOR MI NAPIŠTĚ A BUDE NA TEAMESCH
+
+require_once __DIR__ . '/../hesla.php';
 
 require __DIR__ . '/../vendor/autoload.php';
 
-function sendEmail($to, $subject, $text)
+function sendEmail($to = , $subject, $text)
 {
+    global $gmailPassword;
+
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'jahoda.tadeas@gmail.com';
-        // Je třeba přidat si heslo, pošlu vám ho na teamsy
-        $mail->Password   = '';
+        $mail->Password   =  $gmailPassword;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->SMTPOptions = [
             'ssl' => [
