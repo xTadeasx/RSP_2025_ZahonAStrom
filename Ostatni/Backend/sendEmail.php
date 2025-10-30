@@ -8,7 +8,7 @@ require_once __DIR__ . '/../hesla.php';
 
 require __DIR__ . '/../vendor/autoload.php';
 
-function sendEmail($to = , $subject, $text)
+function sendEmail($to, $subject, $text)
 {
     global $gmailPassword;
 
