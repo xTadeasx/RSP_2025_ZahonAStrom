@@ -38,8 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: ../Frontend/index.php');
             break;
         case 'writerRegister':
-            $text = $_POST['text'] ?? '';
-            sendEmail('rspzahonastrom@gmail.com', 'Zadost o pozici autora', $text);
+            $text = trim($_POST['text'] ?? '');
+            if ($text === '' || mb_strlen($text) < 10) {
+                $_SESSION['error'] = 'Zadejte prosím důvod (min. 10 znaků).';
+                header('Location: ../Frontend/user.php');
+                break;
+            }
+            $ok = sendEmail('rspzahonastrom@gmail.com', 'Žádost o pozici autora', nl2br($text));
+            if ($ok) {
+                $_SESSION['success'] = 'Žádost o pozici autora byla odeslána.';
+            } else {
+                $_SESSION['error'] = 'Nepodařilo se odeslat e‑mail. Zkuste to prosím později.';
+            }
             header('Location: ../Frontend/user.php');
             break;
         default:
