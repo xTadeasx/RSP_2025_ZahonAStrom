@@ -1,54 +1,30 @@
-<?php
-    // !!! TOTO PŘIDAT VŽDY VŠUDE - MŮŽEŠ SI VYTVOŘIT SOUBOR A PAK JEN VŠUDE DÁT REQUIRE_ONCE NEBO TO PŘEPISOVAT, TO NECHÁM NA TOBĚ
-    // !!! OSOBNĚ BYCH NA TO VYTVOŘIL TEN SOUBOR, DAL TAM PŘÍMO CSS A JS AŤ TO NEMUSÍŠ FŮRT KOPÍROVAT
-    session_start();
-    if (isset($_SESSION['error'])) {
-        echo '<div class="alert alert-success">' . $_SESSION['error'] . '</div>';
-        // To do: ten div stylovat, ideálně pravej horní roh stránky, červenej čtverec, po pár sekundách aby zmizel.
-        unset($_SESSION['error']);
-    }
-    if (isset($_SESSION['success'])) {
-        echo '<div class="alert alert-success">' . $_SESSION['success'] . '</div>';
-        // To do: ten div stylovat, ideálně pravej horní roh stránky, zelený nebo modrý čtverec, po pár sekundách aby zmizel.
-        unset($_SESSION['success']);
-    }
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RSP - Záhon a Strom</title>
-</head>
-<body>
-    <H1>EDIT Uzivatele ucet</H1>
+<?php require_once __DIR__ . '/../Backend/notAccess.php'; ?>
+<?php require_once __DIR__ . '/Include/bootstrap.php'; ?>
+<?php require_once __DIR__ . '/Include/header.php'; ?>
+    <h1>Účet uživatele</h1>
     <form action="../Backend/userControl.php" method="POST">
         <input type="hidden" name="action" value="edit_user">
 
         <input type="hidden" name="id" value="<?php echo htmlspecialchars($_SESSION['user']['id'] ?? ''); ?>">
 
         <label for="username">Username:</label>
-        <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($_SESSION['user']['username'] ?? ''); ?>"  required>
-        <br><br>
+        <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($_SESSION['user']['username'] ?? ''); ?>" required>
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" minlength="3" required>
-        <br><br>
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($_SESSION['user']['email'] ?? ''); ?>" required>
-        <br><br>
-        <label for="phone">phone:</label>
+        <label for="phone">Phone:</label>
         <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($_SESSION['user']['phone'] ?? ''); ?>" required>
-        <br><br>
-
-        <button type="submit">Uložit změny</button>
+        <div class="actions">
+            <button class="btn" type="submit">Uložit změny</button>
+        </div>
     </form>
-    <br><br>
+    <div style="height:16px"></div>
     <form action="../Backend/userControl.php" method="POST">
         <input type="hidden" name="action" value="writerRegister">
         <input type="text" id="text" name="text" placeholder="Zadejte důvod proč chcete být autorem" minlength="10" required>
-        <br>
-
-        <button type="submit">Přihlásit se k pozici autora</button>
+        <div class="actions">
+            <button class="btn" type="submit">Přihlásit se k pozici autora</button>
+        </div>
     </form>
-</body>
-</html>
+<?php require_once __DIR__ . '/Include/footer.php'; ?>

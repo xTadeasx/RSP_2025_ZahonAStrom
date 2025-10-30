@@ -1,60 +1,38 @@
-<?php
-    // !!! TOTO PŘIDAT VŽDY VŠUDE - MŮŽEŠ SI VYTVOŘIT SOUBOR A PAK JEN VŠUDE DÁT REQUIRE_ONCE NEBO TO PŘEPISOVAT, TO NECHÁM NA TOBĚ
-    // !!! OSOBNĚ BYCH NA TO VYTVOŘIL TEN SOUBOR, DAL TAM PŘÍMO CSS A JS AŤ TO NEMUSÍŠ FŮRT KOPÍROVAT
-    session_start();
-    if (isset($_SESSION['error'])) {
-        echo '<div class="alert alert-success">' . $_SESSION['error'] . '</div>';
-        // To do: ten div stylovat, ideálně pravej horní roh stránky, červenej čtverec, po pár sekundách aby zmizel.
-        unset($_SESSION['error']);
-    }
-    if (isset($_SESSION['success'])) {
-        echo '<div class="alert alert-success">' . $_SESSION['success'] . '</div>';
-        // To do: ten div stylovat, ideálně pravej horní roh stránky, zelený nebo modrý čtverec, po pár sekundách aby zmizel.
-        unset($_SESSION['success']);
-    }
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RSP - Záhon a Strom</title>
-</head>
-<body>
-    <h1>Login</h1>
+<?php require_once __DIR__ . '/Include/bootstrap.php'; ?>
+<?php require_once __DIR__ . '/Include/header.php'; ?>
+
+    <h1>Přihlášení</h1>
     <form action="../Backend/login.php" method="POST">
         <input type="hidden" name="action" value="login">
         
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required>
-        <br><br>
+        
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" required>
-        <br><br>
         
-        <button type="submit">Login</button>
+        <div class="actions">
+            <button class="btn" type="submit">Login</button>
+        </div>
     </form>
 
-    <br><br>
+    <div style="height:16px"></div>
      <!-- Nějak udělat aby u každého inputu co má required tak ať se přidá '*' mělo by to jít nějak přes javascript -->
-    <h1>Register</h1>
+    <h1>Registrace</h1>
     <form action="../Backend/login.php" method="POST">
         <input type="hidden" name="action" value="register">
 
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required>
-        <br><br>
         <label for="password">Password:</label>
-        <input type="password" id="password" name="password" minlength="3"required>
-        <br><br>
+        <input type="password" id="password" name="password" minlength="3" required>
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" required>
-        <br><br>
-        <label for="phone">phone:</label>
+        <label for="phone">Phone:</label>
         <input type="text" id="phone" name="phone" required>
-        <br><br>
         
-        <button type="submit">Register</button>
+        <div class="actions">
+            <button class="btn" type="submit">Register</button>
+        </div>
     </form>
-</body>
-</html>
+<?php require_once __DIR__ . '/Include/footer.php'; ?>
