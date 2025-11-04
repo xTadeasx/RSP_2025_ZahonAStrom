@@ -134,7 +134,7 @@ function registerUser($username, $password, $email = null, $phone = null)
         'password' => $hashedPassword,
         'email' => $email,
         'phone' => $phone,
-        'role_id' => 1 // role_id pro čtenáře
+        'role_id' => 6 // role_id pro čtenáře
     ];
     return insert($data, 'users');
 }
