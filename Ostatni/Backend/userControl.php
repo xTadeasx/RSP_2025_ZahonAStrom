@@ -44,7 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header('Location: ../Frontend/user.php');
                 break;
             }
-            $ok = sendEmail('rspzahonastrom@gmail.com', 'Žádost o pozici autora', nl2br($text));
+            // Předáme ID uživatele, aby se do emailu přidal tracking odkaz
+            $userId = $_SESSION['user']['id'] ?? null;
+            $ok = sendEmail('rspzahonastrom@gmail.com', 'Žádost o pozici autora', $text, $userId);
             if ($ok) {
                 $_SESSION['success'] = 'Žádost o pozici autora byla odeslána.';
             } else {
