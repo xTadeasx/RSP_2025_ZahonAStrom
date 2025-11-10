@@ -78,6 +78,8 @@ CREATE TABLE `posts` (
   `id` int NOT NULL,
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci DEFAULT NULL,
   `body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci COMMENT 'Content of the post',
+  `abstract` text CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci DEFAULT NULL COMMENT 'Abstrakt článku',
+  `keywords` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci DEFAULT NULL COMMENT 'Klíčová slova oddělená čárkami',
   `user_id` int DEFAULT NULL,
   `state` int DEFAULT NULL,
   `file_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci DEFAULT NULL,

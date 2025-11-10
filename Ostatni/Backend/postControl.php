@@ -25,6 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Validace vstupních dat
             $title = trim($_POST['title'] ?? '');
             $body = trim($_POST['body'] ?? '');
+            $abstract = trim($_POST['abstract'] ?? '');
+            $keywords = trim($_POST['keywords'] ?? '');
+            $topic = trim($_POST['topic'] ?? '');
+            $authors = trim($_POST['authors'] ?? '');
             
             if (empty($title)) {
                 $_SESSION['error'] = "Název článku je povinný.";
@@ -38,10 +42,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
             
-            // Nastavení výchozího stavu (Koncept - workflow id = 1, pokud existuje)
+            if (empty($abstract)) {
+                $_SESSION['error'] = "Abstrakt článku je povinný.";
+                header('Location: ../Frontend/clanek.php');
+                exit();
+            }
+            
+            // Nastavení výchozího stavu (Nový - workflow id = 1, pokud existuje)
             // Pokud workflow neexistuje, použijeme NULL
             $workflowState = null;
-            $workflow = select('workflow', 'id', "state = 'Koncept'");
+            $workflow = select('workflow', 'id', "state = 'Nový'");
             if (!empty($workflow)) {
                 $workflowState = $workflow[0]['id'];
             }
@@ -50,6 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $postData = [
                 'title' => $title,
                 'body' => $body,
+                'abstract' => $abstract,
+                'keywords' => !empty($keywords) ? $keywords : null,
+                'topic' => !empty($topic) ? $topic : null,
+                'authors' => !empty($authors) ? $authors : null,
                 'user_id' => $userId,
                 'state' => $workflowState,
                 'created_at' => date('Y-m-d H:i:s'),

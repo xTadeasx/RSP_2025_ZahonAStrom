@@ -6,18 +6,36 @@ function insert($data, $table)
 {
     global $conn;
 
-    $columns = implode(", ", array_keys($data));
-    $placeholders = implode(", ", array_fill(0, count($data), "?"));
-    $values = array_values($data);
+    // Filtrovat pouze NULL hodnoty - prázdné stringy ponecháme
+    // NULL hodnoty nebudou zahrnuty do INSERT (použije se DEFAULT z databáze)
+    $filteredData = [];
+    foreach ($data as $key => $value) {
+        if ($value !== null) {
+            $filteredData[$key] = $value;
+        }
+    }
+    
+    // Pokud jsou všechna data NULL, použijeme původní data (pro případ, že chceme explicitně vložit NULL)
+    if (empty($filteredData) && !empty($data)) {
+        // Všechny hodnoty jsou NULL - použijeme původní strukturu, ale musíme použít speciální způsob
+        // Pro teď použijeme původní data a necháme MySQL použít DEFAULT
+        $filteredData = $data;
+    }
 
-    $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
+    $columns = array_keys($filteredData);
+    $placeholders = array_fill(0, count($filteredData), '?');
+    $values = array_values($filteredData);
+
+    $sql = "INSERT INTO $table (" . implode(", ", $columns) . ") VALUES (" . implode(", ", $placeholders) . ")";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         die("Error preparing statement: " . $conn->error);
     }
 
-    $types = str_repeat("s", count($values)); // all as strings (you can customize this)
-    $stmt->bind_param($types, ...$values);
+    $types = str_repeat("s", count($values));
+    if (count($values) > 0) {
+        $stmt->bind_param($types, ...$values);
+    }
 
     $success = $stmt->execute();
     $stmt->close();
