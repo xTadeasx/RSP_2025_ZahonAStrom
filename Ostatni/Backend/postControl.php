@@ -347,6 +347,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $reviewerIds = isset($_POST['reviewer_id']) ? $_POST['reviewer_id'] : [];
                 $dueDate = !empty($_POST['review_due_date']) ? $_POST['review_due_date'] : null;
                 
+                $newReviewersAdded = false;
+                
                 // Přidání nových recenzentů
                 if (!empty($reviewerIds) && is_array($reviewerIds)) {
                     require_once __DIR__ . '/../Database/db.php';
@@ -354,8 +356,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     foreach ($reviewerIds as $reviewerId) {
                         $reviewerId = (int)$reviewerId;
                         if ($reviewerId > 0) {
-                            // Kontrola, zda už není přiřazen
-                            $existingAssignment = select('post_assignments', 'id', "post_id = $articleId AND reviewer_id = $reviewerId");
+                            // Kontrola, zda už není přiřazen - použijeme prepared statement
+                            $existingAssignmentSql = "SELECT id FROM post_assignments WHERE post_id = ? AND reviewer_id = ?";
+                            $existingAssignmentStmt = $conn->prepare($existingAssignmentSql);
+                            $existingAssignment = [];
+                            if ($existingAssignmentStmt) {
+                                $existingAssignmentStmt->bind_param("ii", $articleId, $reviewerId);
+                                $existingAssignmentStmt->execute();
+                                if (method_exists($existingAssignmentStmt, 'get_result')) {
+                                    $existingAssignmentResult = $existingAssignmentStmt->get_result();
+                                    if ($existingAssignmentResult && $existingAssignmentResult->num_rows > 0) {
+                                        while ($row = $existingAssignmentResult->fetch_assoc()) {
+                                            $existingAssignment[] = $row;
+                                        }
+                                    }
+                                } else {
+                                    $existingAssignmentStmt->bind_result($assignmentId);
+                                    if ($existingAssignmentStmt->fetch()) {
+                                        $existingAssignment[] = ['id' => $assignmentId];
+                                    }
+                                }
+                                $existingAssignmentStmt->close();
+                            }
                             
                             if (empty($existingAssignment)) {
                                 // Přidání nového přiřazení
@@ -367,13 +389,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     'due_date' => $dueDate ? date('Y-m-d', strtotime($dueDate)) : null,
                                     'status' => 'Přiděleno'
                                 ];
-                                insert($assignmentData, 'post_assignments');
+                                $insertResult = insert($assignmentData, 'post_assignments');
+                                if ($insertResult) {
+                                    $newReviewersAdded = true;
+                                }
                             }
                         }
                     }
                 }
                 
-                $_SESSION['success'] = "Článek byl úspěšně aktualizován.";
+                // Pokud byl přidán nový recenzent, změňme stav článku na "V recenzi" (workflow id = 3)
+                if ($newReviewersAdded) {
+                    $workflowStateSql = "SELECT id FROM workflow WHERE state = ?";
+                    $workflowStateStmt = $conn->prepare($workflowStateSql);
+                    $workflowStateId = null;
+                    if ($workflowStateStmt) {
+                        $workflowStateName = 'V recenzi';
+                        $workflowStateStmt->bind_param("s", $workflowStateName);
+                        $workflowStateStmt->execute();
+                        
+                        if (method_exists($workflowStateStmt, 'get_result')) {
+                            $workflowStateResult = $workflowStateStmt->get_result();
+                            if ($workflowStateResult && $workflowStateResult->num_rows > 0) {
+                                $workflowRow = $workflowStateResult->fetch_assoc();
+                                $workflowStateId = $workflowRow['id'];
+                            }
+                        } else {
+                            $workflowStateStmt->bind_result($workflowId);
+                            if ($workflowStateStmt->fetch()) {
+                                $workflowStateId = $workflowId;
+                            }
+                        }
+                        $workflowStateStmt->close();
+                    }
+                    
+                    if ($workflowStateId !== null) {
+                        // Aktualizace stavu článku na "V recenzi"
+                        $updatePostStateSql = "UPDATE posts SET state = ?, updated_at = ?, updated_by = ? WHERE id = ?";
+                        $updatePostStateStmt = $conn->prepare($updatePostStateSql);
+                        if ($updatePostStateStmt) {
+                            $updatedAt = date('Y-m-d H:i:s');
+                            $updatePostStateStmt->bind_param("isii", $workflowStateId, $updatedAt, $userId, $articleId);
+                            $updateStateResult = $updatePostStateStmt->execute();
+                            if (!$updateStateResult) {
+                                error_log("Chyba při aktualizaci stavu článku na 'V recenzi': " . $updatePostStateStmt->error);
+                            }
+                            $updatePostStateStmt->close();
+                        }
+                    }
+                }
+                
+                $_SESSION['success'] = "Článek byl úspěšně aktualizován." . ($newReviewersAdded ? " Recenzenti byli přiřazeni a článek byl přepnut do stavu 'V recenzi'." : "");
                 header("Location: ../Frontend/edit_article.php?id=$articleId");
             } else {
                 $_SESSION['error'] = "Došlo k chybě při aktualizaci článku.";

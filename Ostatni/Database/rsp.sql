@@ -223,7 +223,8 @@ INSERT INTO `workflow` (`id`, `state`, `created_at`, `updated_at`, `created_by`,
 (1, 'Nový', NULL, NULL, NULL, NULL),
 (2, 'Odeslaný', NULL, NULL, NULL, NULL),
 (3, 'V recenzi', NULL, NULL, NULL, NULL),
-(4, 'Vrácen k úpravám', NULL, NULL, NULL, NULL),
+(4, 'Schváleno recenzenty', NULL, NULL, NULL, NULL),
+(5, 'Vrácen k úpravám', NULL, NULL, NULL, NULL),
 (5, 'Schválen', NULL, NULL, NULL, NULL),
 (6, 'Zamítnut', NULL, NULL, NULL, NULL);
 

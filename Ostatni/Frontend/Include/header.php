@@ -9,8 +9,8 @@ $userRoleId = $_SESSION['user']['role_id'] ?? null;
 // Role: 1=Admin, 2=Šéfredaktor, 3=Recenzent, 4=Redaktor, 5=Autor, 6=Čtenář
 $showNewArticleButton = !empty($userRoleId) && $userRoleId != 6;
 
-// Zobrazení tlačítka "Přehled článků" pro role: Admin, Šéfredaktor, Recenzent, Redaktor (ne Autor a Čtenář)
-$showArticlesOverviewButton = !empty($userRoleId) && in_array($userRoleId, [1, 2, 3, 4]);
+// Zobrazení tlačítka "Přehled článků" pro role: Admin, Šéfredaktor, Recenzent, Redaktor, Autor (ne Čtenář)
+$showArticlesOverviewButton = !empty($userRoleId) && in_array($userRoleId, [1, 2, 3, 4, 5]);
 ?>
 <header class="site-header">
     <nav class="navbar navbar-expand-lg navbar-dark" style="background: var(--brand)">

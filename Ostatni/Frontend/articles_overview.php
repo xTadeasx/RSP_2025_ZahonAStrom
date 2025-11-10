@@ -14,8 +14,8 @@ if (empty($_SESSION['user']['id'])) {
 $userId = $_SESSION['user']['id'];
 $userRoleId = $_SESSION['user']['role_id'] ?? null;
 
-// Ověření oprávnění - pouze role: Admin (1), Šéfredaktor (2), Recenzent (3), Redaktor (4)
-if (empty($userRoleId) || !in_array($userRoleId, [1, 2, 3, 4])) {
+// Ověření oprávnění - role: Admin (1), Šéfredaktor (2), Recenzent (3), Redaktor (4), Autor (5)
+if (empty($userRoleId) || !in_array($userRoleId, [1, 2, 3, 4, 5])) {
     $_SESSION['error'] = "Nemáte oprávnění k přístupu k přehledu článků.";
     header('Location: ./index.php');
     exit();
@@ -70,6 +70,50 @@ try {
                 LEFT JOIN users u ON p.user_id = u.id
                 LEFT JOIN workflow w ON p.state = w.id
                 WHERE pa.reviewer_id = " . (int)$userId;
+        
+        // Přidání filtru podle stavu
+        if ($filterState !== null && $filterState > 0) {
+            $sql .= " AND p.state = " . (int)$filterState;
+        }
+        
+        // Přidání filtru podle názvu
+        if (!empty($filterTitle)) {
+            $escapedTitle = $conn->real_escape_string($filterTitle);
+            $sql .= " AND p.title LIKE '%" . $escapedTitle . "%'";
+        }
+        
+        $sql .= " ORDER BY COALESCE(p.published_at, p.created_at) DESC";
+        
+        $result = $conn->query($sql);
+        if ($result) {
+            $totalCount = $result->num_rows;
+            if ($result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                    $articles[] = $row;
+                }
+            }
+        }
+    } elseif ($userRoleId == 5) {
+        // Autor - pouze vlastní články
+        $pageTitle = "Moje články";
+        
+        // Sestavení SQL dotazu s filtry - použijeme escape_string pro jednoduchost
+        $sql = "SELECT 
+                    p.id,
+                    p.title,
+                    p.abstract,
+                    p.topic,
+                    p.authors,
+                    p.created_at,
+                    p.published_at,
+                    p.state as post_state,
+                    u.username as author_username,
+                    u.id as author_id,
+                    w.state as workflow_state
+                FROM posts p
+                LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN workflow w ON p.state = w.id
+                WHERE p.user_id = " . (int)$userId;
         
         // Přidání filtru podle stavu
         if ($filterState !== null && $filterState > 0) {
@@ -248,6 +292,11 @@ function getStateColor($state) {
                     </a>
                 <?php elseif ($userRoleId == 3): ?>
                     Nemáte přiřazené žádné články k recenzi.
+                <?php elseif ($userRoleId == 5): ?>
+                    Zatím jste nevytvořil žádné články.
+                    <a href="./clanek.php" style="color: var(--brand); text-decoration: underline; margin-left: 8px;">
+                        Vytvořit nový článek
+                    </a>
                 <?php else: ?>
                     Zatím nejsou k dispozici žádné články.
                 <?php endif; ?>
@@ -336,6 +385,33 @@ function getStateColor($state) {
                                         <?php if (in_array($userRoleId, [1, 2, 4])): // Pouze Admin, Šéfredaktor, Redaktor ?>
                                             <a href="./edit_article.php?id=<?= $article['id'] ?>" class="btn btn-small" style="text-decoration: none; background: var(--brand-2); color: white;">
                                                 Editovat
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if ($userRoleId == 3): // Recenzent ?>
+                                            <?php
+                                            // Zkontrolovat, zda recenzent už napsal recenzi
+                                            $hasReview = false;
+                                            try {
+                                                $reviewCheckSql = "SELECT id FROM post_reviews WHERE post_id = ? AND reviewer_id = ?";
+                                                $reviewCheckStmt = $conn->prepare($reviewCheckSql);
+                                                if ($reviewCheckStmt) {
+                                                    $reviewCheckStmt->bind_param("ii", $article['id'], $userId);
+                                                    $reviewCheckStmt->execute();
+                                                    if (method_exists($reviewCheckStmt, 'get_result')) {
+                                                        $reviewCheckResult = $reviewCheckStmt->get_result();
+                                                        $hasReview = $reviewCheckResult && $reviewCheckResult->num_rows > 0;
+                                                    } else {
+                                                        $reviewCheckStmt->bind_result($reviewId);
+                                                        $hasReview = $reviewCheckStmt->fetch();
+                                                    }
+                                                    $reviewCheckStmt->close();
+                                                }
+                                            } catch (Exception $e) {
+                                                error_log("Chyba při kontrole recenze: " . $e->getMessage());
+                                            }
+                                            ?>
+                                            <a href="./review_article.php?id=<?= $article['id'] ?>" class="btn btn-small" style="text-decoration: none; background: #4CAF50; color: white;">
+                                                <?= $hasReview ? '✏️ Upravit recenzi' : '⭐ Napsat recenzi' ?>
                                             </a>
                                         <?php endif; ?>
                                     </div>
