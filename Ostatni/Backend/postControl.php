@@ -56,6 +56,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $workflowState = $workflow[0]['id'];
             }
             
+            // Zpracování nahrání souboru
+            $filePath = null;
+            if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/../uploads/';
+                
+                // Vytvoření složky pro uploady, pokud neexistuje
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                
+                $file = $_FILES['file'];
+                $fileName = $file['name'];
+                $fileTmpName = $file['tmp_name'];
+                $fileSize = $file['size'];
+                $fileError = $file['error'];
+                
+                // Validace typu souboru
+                $allowedTypes = ['application/pdf', 'application/msword', 
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+                $allowedExtensions = ['pdf', 'doc', 'docx'];
+                $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                
+                // Kontrola přípony
+                if (!in_array($fileExtension, $allowedExtensions)) {
+                    $_SESSION['error'] = "Neplatný typ souboru. Povolené formáty: PDF, DOC, DOCX";
+                    header('Location: ../Frontend/clanek.php');
+                    exit();
+                }
+                
+                // Kontrola velikosti (max 10 MB)
+                $maxSize = 10 * 1024 * 1024; // 10 MB
+                if ($fileSize > $maxSize) {
+                    $_SESSION['error'] = "Soubor je příliš velký. Maximální velikost: 10 MB";
+                    header('Location: ../Frontend/clanek.php');
+                    exit();
+                }
+                
+                // Generování bezpečného názvu souboru
+                $safeFileName = uniqid('article_', true) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $fileName);
+                $targetPath = $uploadDir . $safeFileName;
+                
+                // Přesunutí souboru
+                if (move_uploaded_file($fileTmpName, $targetPath)) {
+                    // Uložení relativní cesty (pouze název souboru pro bezpečnost)
+                    $filePath = 'uploads/' . $safeFileName;
+                } else {
+                    $_SESSION['error'] = "Nepodařilo se nahrát soubor. Zkuste to prosím znovu.";
+                    header('Location: ../Frontend/clanek.php');
+                    exit();
+                }
+            }
+            
             // Příprava dat pro vložení
             $postData = [
                 'title' => $title,
@@ -64,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'keywords' => !empty($keywords) ? $keywords : null,
                 'topic' => !empty($topic) ? $topic : null,
                 'authors' => !empty($authors) ? $authors : null,
+                'file_path' => $filePath,
                 'user_id' => $userId,
                 'state' => $workflowState,
                 'created_at' => date('Y-m-d H:i:s'),
@@ -76,11 +129,255 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = insert($postData, 'posts');
             
             if ($result) {
-                $_SESSION['success'] = "Článek byl úspěšně vytvořen.";
+                $_SESSION['success'] = "Článek byl úspěšně vytvořen." . ($filePath ? " Soubor byl nahrán." : "");
                 header('Location: ../Frontend/user.php');
             } else {
+                // Pokud se vložení nezdařilo a soubor byl nahrán, smažeme ho
+                if ($filePath && file_exists(__DIR__ . '/../' . $filePath)) {
+                    unlink(__DIR__ . '/../' . $filePath);
+                }
                 $_SESSION['error'] = "Došlo k chybě při vytváření článku.";
                 header('Location: ../Frontend/clanek.php');
+            }
+            break;
+            
+        case 'update_post':
+            $userId = $_SESSION['user']['id'] ?? null;
+            $articleId = isset($_POST['article_id']) ? (int)$_POST['article_id'] : 0;
+            
+            // Ověření, že uživatel je přihlášen
+            if (!$userId) {
+                $_SESSION['error'] = "Musíte být přihlášeni.";
+                header('Location: ../Frontend/login.php');
+                exit();
+            }
+            
+            // Ověření, že uživatel má oprávnění editovat (Admin, Šéfredaktor, Redaktor)
+            $user = select('users', 'role_id', "id = $userId");
+            if (empty($user) || !in_array($user[0]['role_id'] ?? null, [1, 2, 4])) {
+                $_SESSION['error'] = "Nemáte oprávnění editovat články.";
+                header('Location: ../Frontend/articles_overview.php');
+                exit();
+            }
+            
+            if ($articleId <= 0) {
+                $_SESSION['error'] = "Neplatné ID článku.";
+                header('Location: ../Frontend/articles_overview.php');
+                exit();
+            }
+            
+            // Ověření, že článek existuje
+            $existingArticle = select('posts', 'id, file_path', "id = $articleId");
+            if (empty($existingArticle)) {
+                $_SESSION['error'] = "Článek nebyl nalezen.";
+                header('Location: ../Frontend/articles_overview.php');
+                exit();
+            }
+            
+            // Validace vstupních dat
+            $title = trim($_POST['title'] ?? '');
+            $body = trim($_POST['body'] ?? '');
+            $abstract = trim($_POST['abstract'] ?? '');
+            $keywords = trim($_POST['keywords'] ?? '');
+            $topic = trim($_POST['topic'] ?? '');
+            $authors = trim($_POST['authors'] ?? '');
+            $state = isset($_POST['state']) ? (int)$_POST['state'] : null;
+            
+            if (empty($title)) {
+                $_SESSION['error'] = "Název článku je povinný.";
+                header("Location: ../Frontend/edit_article.php?id=$articleId");
+                exit();
+            }
+            
+            if (empty($body)) {
+                $_SESSION['error'] = "Obsah článku je povinný.";
+                header("Location: ../Frontend/edit_article.php?id=$articleId");
+                exit();
+            }
+            
+            if (empty($abstract)) {
+                $_SESSION['error'] = "Abstrakt článku je povinný.";
+                header("Location: ../Frontend/edit_article.php?id=$articleId");
+                exit();
+            }
+            
+            if ($state === null || $state <= 0) {
+                $_SESSION['error'] = "Stav workflow je povinný.";
+                header("Location: ../Frontend/edit_article.php?id=$articleId");
+                exit();
+            }
+            
+            // Zpracování souboru
+            $currentFilePath = $existingArticle[0]['file_path'] ?? null;
+            $removeFile = isset($_POST['remove_file']) && $_POST['remove_file'] == '1';
+            $fileChanged = false;
+            $newFilePath = $currentFilePath;
+            
+            // Odstranění souboru, pokud je požadováno
+            if ($removeFile && $currentFilePath) {
+                $fullPath = __DIR__ . '/../' . $currentFilePath;
+                if (file_exists($fullPath)) {
+                    unlink($fullPath);
+                }
+                $newFilePath = null;
+                $fileChanged = true;
+            }
+            
+            // Nahrání nového souboru
+            if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/../uploads/';
+                
+                // Vytvoření složky pro uploady, pokud neexistuje
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                
+                $file = $_FILES['file'];
+                $fileName = $file['name'];
+                $fileTmpName = $file['tmp_name'];
+                $fileSize = $file['size'];
+                
+                // Validace typu souboru
+                $allowedExtensions = ['pdf', 'doc', 'docx'];
+                $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                
+                // Kontrola přípony
+                if (!in_array($fileExtension, $allowedExtensions)) {
+                    $_SESSION['error'] = "Neplatný typ souboru. Povolené formáty: PDF, DOC, DOCX";
+                    header("Location: ../Frontend/edit_article.php?id=$articleId");
+                    exit();
+                }
+                
+                // Kontrola velikosti (max 10 MB)
+                $maxSize = 10 * 1024 * 1024; // 10 MB
+                if ($fileSize > $maxSize) {
+                    $_SESSION['error'] = "Soubor je příliš velký. Maximální velikost: 10 MB";
+                    header("Location: ../Frontend/edit_article.php?id=$articleId");
+                    exit();
+                }
+                
+                // Smazání starého souboru, pokud existuje
+                if ($currentFilePath) {
+                    $oldFullPath = __DIR__ . '/../' . $currentFilePath;
+                    if (file_exists($oldFullPath)) {
+                        unlink($oldFullPath);
+                    }
+                }
+                
+                // Generování bezpečného názvu souboru
+                $safeFileName = uniqid('article_', true) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $fileName);
+                $targetPath = $uploadDir . $safeFileName;
+                
+                // Přesunutí souboru
+                if (move_uploaded_file($fileTmpName, $targetPath)) {
+                    $newFilePath = 'uploads/' . $safeFileName;
+                    $fileChanged = true;
+                } else {
+                    $_SESSION['error'] = "Nepodařilo se nahrát soubor. Zkuste to prosím znovu.";
+                    header("Location: ../Frontend/edit_article.php?id=$articleId");
+                    exit();
+                }
+            }
+            
+            // Příprava dat pro aktualizaci
+            $updateData = [
+                'title' => $title,
+                'body' => $body,
+                'abstract' => $abstract,
+                'keywords' => !empty($keywords) ? $keywords : null,
+                'topic' => !empty($topic) ? $topic : null,
+                'authors' => !empty($authors) ? $authors : null,
+                'state' => $state,
+                'updated_at' => date('Y-m-d H:i:s'),
+                'updated_by' => $userId
+            ];
+            
+            // Přidání file_path pouze pokud se změnil
+            if ($fileChanged) {
+                $updateData['file_path'] = $newFilePath;
+            }
+            
+            // Aktualizace článku - použijeme přímý SQL dotaz s prepared statement pro bezpečnost
+            require_once __DIR__ . '/../Database/db.php';
+            
+            $setParts = [];
+            $params = [];
+            $types = '';
+            
+            // Definice typů pro jednotlivé sloupce
+            $columnTypes = [
+                'title' => 's',
+                'body' => 's',
+                'abstract' => 's',
+                'keywords' => 's',
+                'topic' => 's',
+                'authors' => 's',
+                'file_path' => 's',
+                'state' => 'i',
+                'updated_at' => 's',
+                'updated_by' => 'i'
+            ];
+            
+            foreach ($updateData as $key => $value) {
+                $setParts[] = "$key = ?";
+                $params[] = $value;
+                // Použijeme definovaný typ nebo defaultně string
+                $types .= $columnTypes[$key] ?? 's';
+            }
+            
+            $sql = "UPDATE posts SET " . implode(", ", $setParts) . " WHERE id = ?";
+            $params[] = $articleId;
+            $types .= 'i';
+            
+            $stmt = $conn->prepare($sql);
+            if ($stmt) {
+                $stmt->bind_param($types, ...$params);
+                $result = $stmt->execute();
+                if (!$result) {
+                    error_log("Chyba při aktualizaci článku: " . $stmt->error);
+                }
+                $stmt->close();
+            } else {
+                $result = false;
+                error_log("Chyba při přípravě SQL dotazu: " . $conn->error);
+            }
+            
+            if ($result) {
+                // Zpracování přiřazení recenzentů
+                $reviewerIds = isset($_POST['reviewer_id']) ? $_POST['reviewer_id'] : [];
+                $dueDate = !empty($_POST['review_due_date']) ? $_POST['review_due_date'] : null;
+                
+                // Přidání nových recenzentů
+                if (!empty($reviewerIds) && is_array($reviewerIds)) {
+                    require_once __DIR__ . '/../Database/db.php';
+                    
+                    foreach ($reviewerIds as $reviewerId) {
+                        $reviewerId = (int)$reviewerId;
+                        if ($reviewerId > 0) {
+                            // Kontrola, zda už není přiřazen
+                            $existingAssignment = select('post_assignments', 'id', "post_id = $articleId AND reviewer_id = $reviewerId");
+                            
+                            if (empty($existingAssignment)) {
+                                // Přidání nového přiřazení
+                                $assignmentData = [
+                                    'post_id' => $articleId,
+                                    'reviewer_id' => $reviewerId,
+                                    'assigned_by' => $userId,
+                                    'assigned_at' => date('Y-m-d H:i:s'),
+                                    'due_date' => $dueDate ? date('Y-m-d', strtotime($dueDate)) : null,
+                                    'status' => 'Přiděleno'
+                                ];
+                                insert($assignmentData, 'post_assignments');
+                            }
+                        }
+                    }
+                }
+                
+                $_SESSION['success'] = "Článek byl úspěšně aktualizován.";
+                header("Location: ../Frontend/edit_article.php?id=$articleId");
+            } else {
+                $_SESSION['error'] = "Došlo k chybě při aktualizaci článku.";
+                header("Location: ../Frontend/edit_article.php?id=$articleId");
             }
             break;
             

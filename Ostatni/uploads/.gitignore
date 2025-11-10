@@ -1,0 +1,6 @@
+# Ignorovat všechny soubory v této složce
+*
+!.gitignore
+
+# Ponechat .gitignore soubor
+
