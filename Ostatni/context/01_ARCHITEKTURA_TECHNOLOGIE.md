@@ -100,9 +100,60 @@ Include/bootstrap.php (Session check)
   ↓
 Include/header.php (Layout)
   ↓
+Database/db.php (Connection)
+  ↓
+Frontend/article.php (Load from DB)
+  ↓
 Frontend/article.php (Render data)
   ↓
 Include/footer.php (Close layout)
+```
+
+### Vytvoření článku
+```
+Frontend/clanek.php (Form)
+  ↓ POST
+Backend/postControl.php (action=create_post)
+  ↓ (Validation)
+Database/dataControl.php (insert)
+  ↓ (File upload)
+uploads/ (Save file)
+  ↓ (DB insert)
+posts table (state = 1 "Nový")
+  ↓ (Redirect)
+Frontend/user.php (Success message)
+```
+
+### Editace článku a přiřazení recenzenta
+```
+Frontend/articles_overview.php
+  ↓ (Click "Editovat")
+Frontend/edit_article.php (GET id)
+  ↓ (Load article from DB)
+  ↓ (Display form)
+  ↓ POST
+Backend/postControl.php (action=update_post)
+  ↓ (Validation)
+  ↓ (Update posts)
+  ↓ (Assign reviewers → post_assignments)
+  ↓ (Auto change state → 3 "V recenzi")
+Frontend/edit_article.php (Redirect)
+```
+
+### Recenze článku
+```
+Frontend/articles_overview.php (Recenzent)
+  ↓ (Click "Napsat recenzi")
+Frontend/review_article.php (GET id)
+  ↓ (Check assignment)
+  ↓ (Display form)
+  ↓ POST
+Backend/reviewControl.php (action=create_review)
+  ↓ (Validation)
+  ↓ (Insert post_reviews)
+  ↓ (Update post_assignments.status = 'Recenzováno')
+  ↓ (Auto change state → 5 "Vrácen k úpravám")
+Frontend/review_article.php (Redirect)
 ```
 
 ## 🛡️ Security layers

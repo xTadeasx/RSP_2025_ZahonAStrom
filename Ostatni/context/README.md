@@ -85,6 +85,23 @@ Tato složka obsahuje kompletní dokumentaci projektu pro rychlé porozumění s
 
 ---
 
+### 06_WORKFLOW_KOMUNIKACE.md
+**Workflow procesy a komunikace**
+- Workflow stavy článků a automatické změny
+- Role a oprávnění
+- Databázové vztahy
+- Komunikace mezi komponentami
+- Request flow diagramy
+- Bezpečnostní opatření
+- Session management
+- File management
+- Email komunikace
+- Kompletní workflow cyklus
+
+**Pro:** Vývojáře, porozumění workflow procesům, debugování
+
+---
+
 ## 🚀 Quick start
 
 ### Pro vývojáře
@@ -92,6 +109,7 @@ Tato složka obsahuje kompletní dokumentaci projektu pro rychlé porozumění s
 2. Architektura: `01_ARCHITEKTURA_TECHNOLOGIE.md`
 3. Databáze: `02_DATABAZE_SCHÉMA.md`
 4. API: `03_PHP_FUNKCE.md`
+5. Workflow: `06_WORKFLOW_KOMUNIKACE.md`
 
 ### Pro frontend
 1. Přehled: `00_PROJEKT_OVERVIEW.md`
@@ -114,7 +132,7 @@ Tato složka obsahuje kompletní dokumentaci projektu pro rychlé porozumění s
 ### Implementováno ✅
 - ✅ Autentizace (login, register)
 - ✅ CRUD operace pro uživatele
-- ✅ Databázové schéma (4 tabulky)
+- ✅ Databázové schéma (8 tabulek: users, users_roles, posts, workflow, post_assignments, post_reviews, notifications, system_logs)
 - ✅ Session management
 - ✅ Flash messages
 - ✅ Email odesílání (PHPMailer)
@@ -123,16 +141,30 @@ Tato složka obsahuje kompletní dokumentaci projektu pro rychlé porozumění s
 - ✅ Password hashing (bcrypt)
 - ✅ XSS protection (escaping)
 - ✅ SQL injection prevention (prepared statements)
+- ✅ Recenzní workflow systém
+- ✅ Správa článků (CRUD)
+- ✅ Nahrávání souborů (PDF, DOC, DOCX)
+- ✅ Přiřazování recenzentů
+- ✅ Automatické změny workflow stavů
+- ✅ Role-based access control (RBAC)
+- ✅ Přehled článků podle rolí
+- ✅ Filtrování článků (stav, název)
+- ✅ Editace článků
+- ✅ Recenze článků (hodnocení, komentáře)
+- ✅ Stahování souborů článků
 
 ### Důležité TODOs 🔴
 - 🔴 CSRF protection
 - 🔴 Rate limiting
-- 🔴 Vylepšit password reset
-- 🔴 Napojit články na databázi
-- 🔴 Implementovat recenzní workflow
-- 🔴 File upload security
-- 🔴 Input validation
+- 🔴 Vylepšit password reset (token-based)
 - 🔴 Database credentials do .env
+- 🔴 Paginace článků
+- 🔴 Admin panel
+- 🔴 Avatary uživatelů
+- 🔴 Notifikace uživatelů
+- 🔴 Statistiky a reporty
+- 🔴 Export článků (PDF)
+- 🔴 Vylepšit workflow (schválení po recenzi)
 
 ### Technologie
 - PHP 8.2.12
@@ -178,8 +210,9 @@ RSP_2025_ZahonAStrom/
 ## 📝 Aktualizace
 
 **Poslední update**: 2025-01-17  
-**Verze dokumentace**: 1.0  
-**Autor**: AI Assistant (na základě analýzy kódu)
+**Verze dokumentace**: 2.0  
+**Autor**: AI Assistant (na základě analýzy kódu)  
+**Nové dokumenty**: `06_WORKFLOW_KOMUNIKACE.md` - Kompletní dokumentace workflow procesů
 
 ---
 

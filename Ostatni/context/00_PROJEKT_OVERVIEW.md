@@ -75,7 +75,9 @@ RSP_2025_ZahonAStrom/
 
 ## 🗄️ Databázové schéma
 
-### Tabulka `users`
+### Hlavní tabulky
+
+#### `users` - Uživatelé
 ```sql
 - id (PK, AUTO_INCREMENT)
 - username (varchar 255)
@@ -86,29 +88,83 @@ RSP_2025_ZahonAStrom/
 - created_at, updated_at, created_by, updated_by
 ```
 
-### Tabulka `users_roles`
+#### `users_roles` - Role uživatelů
 ```sql
 - id (PK, AUTO_INCREMENT)
 - role (varchar 255)
 - created_at, updated_at, created_by, updated_by
 ```
+**Role:** Administrátor, Šéfredaktor, Recenzent, Redaktor, Autor, Čtenář
 
-### Tabulka `posts`
+#### `posts` - Články
 ```sql
 - id (PK, AUTO_INCREMENT)
 - title (varchar 255)
 - body (text)
+- abstract (text)
+- keywords (varchar 500)
+- topic (varchar 255)
+- authors (text)
+- file_path (varchar 500)
 - user_id (FK -> users.id)
 - state (FK -> workflow.id)
 - created_at, updated_at, created_by, updated_by
+- published_at (datetime)
 ```
 
-### Tabulka `workflow`
+#### `workflow` - Workflow stavy
 ```sql
 - id (PK, AUTO_INCREMENT)
 - state (varchar 255)
 - created_at, updated_at, created_by, updated_by
 ```
+**Stavy:** Nový, Odeslaný, V recenzi, Schváleno recenzenty, Vrácen k úpravám, Schválen, Zamítnut
+
+#### `post_assignments` - Přiřazení recenzentů
+```sql
+- id (PK, AUTO_INCREMENT)
+- post_id (FK -> posts.id)
+- reviewer_id (FK -> users.id)
+- assigned_by (FK -> users.id)
+- assigned_at (datetime)
+- due_date (date)
+- status (varchar 50)
+```
+
+#### `post_reviews` - Recenze článků
+```sql
+- id (PK, AUTO_INCREMENT)
+- post_id (FK -> posts.id)
+- reviewer_id (FK -> users.id)
+- score_actuality (tinyint 1-5)
+- score_originality (tinyint 1-5)
+- score_language (tinyint 1-5)
+- score_expertise (tinyint 1-5)
+- comment (text)
+- created_at, updated_at
+```
+
+#### `notifications` - Notifikace
+```sql
+- id (PK, AUTO_INCREMENT)
+- user_id (FK -> users.id)
+- type (varchar 50)
+- message (text)
+- created_at, read_at
+- related_post_id (FK -> posts.id)
+```
+
+#### `system_logs` - Systémové logy
+```sql
+- id (PK, AUTO_INCREMENT)
+- user_id (FK -> users.id)
+- event_type (varchar 50)
+- level (varchar 20)
+- message (text)
+- created_at
+```
+
+**Detailní schéma:** Viz `02_DATABAZE_SCHÉMA.md`
 
 ## 🎨 Stylování
 
@@ -194,7 +250,7 @@ RSP_2025_ZahonAStrom/
 
 ## 📌 TODOs a poznámky
 
-### Implementováno
+### Implementováno ✅
 - ✅ Systém autentizace
 - ✅ Registrace uživatelů
 - ✅ Flash messages
@@ -203,18 +259,33 @@ RSP_2025_ZahonAStrom/
 - ✅ Databázové funkce
 - ✅ Role management
 - ✅ Obnova hesla
+- ✅ Recenzní workflow systém
+- ✅ Správa článků (CRUD)
+- ✅ Nahrávání souborů (PDF, DOC, DOCX)
+- ✅ Přiřazování recenzentů k článkům
+- ✅ Automatické změny workflow stavů
+- ✅ Přehled článků podle rolí
+- ✅ Filtrování článků (stav, název)
+- ✅ Editace článků
+- ✅ Recenze článků (hodnocení 1-5, komentáře)
+- ✅ Stahování souborů článků
+- ✅ File upload security
+- ✅ Input validation
+- ✅ Role-based access control (RBAC)
 
-### TODO
-- [ ] Recenzní workflow
-- [ ] Správa článků (CRUD)
-- [ ] Nahrávání souborů
+### TODO 🔴
+- [ ] CSRF tokeny
+- [ ] Rate limiting
 - [ ] Kategorie článků
-- [ ] Vyhledávání
+- [ ] Vyhledávání (full-text)
 - [ ] Paginace
 - [ ] Admin panel
 - [ ] Avatary uživatelů
-- [ ] CSRF tokeny
-- [ ] Rate limiting
+- [ ] Notifikace uživatelů
+- [ ] Statistiky a reporty
+- [ ] Export článků (PDF)
+- [ ] Vylepšit workflow (schválení po recenzi)
+- [ ] Database credentials do .env
 
 ## 👥 Tým
 - Petr Novák - Project Manager
@@ -232,8 +303,18 @@ RSP_2025_ZahonAStrom/
 - Excel: SharePoint
 
 ## 🔗 Důležité poznámky
-- Heslo Gmail je uloženo v `hesla.php` (citlivé)
+- Heslo email je uloženo v `hesla.php` a `sendEmail.php` (citlivé - Seznam.cz)
 - Databáze se jmenuje `rsp` ale připojení je na `RSP`
-- Všechny články jsou zatím demo data
-- Projekt je v rané fázi vývoje
+- Články jsou načítány z databáze (`posts` tabulka)
+- Workflow stavy se automaticky mění při určitých akcích
+- Recenzní systém je plně funkční
+- Soubory článků se ukládají do `uploads/` adresáře
+
+## 📚 Dokumentace
+- **Workflow a komunikace:** `context/06_WORKFLOW_KOMUNIKACE.md`
+- **Databázové schéma:** `context/02_DATABAZE_SCHÉMA.md`
+- **Architektura:** `context/01_ARCHITEKTURA_TECHNOLOGIE.md`
+- **PHP funkce:** `context/03_PHP_FUNKCE.md`
+- **Frontend komponenty:** `context/04_FRONTEND_COMPONENTS.md`
+- **Bezpečnost:** `context/05_SECURITY_BEST_PRACTICES.md`
 
