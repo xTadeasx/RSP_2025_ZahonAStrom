@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . '/notAccess.php';
 require_once __DIR__ . '/../Database/dataControl.php';
+require_once __DIR__ . '/../Database/db.php';
+require_once __DIR__ . '/sendEmail.php';
+require_once __DIR__ . '/notificationService.php';
+require_once __DIR__ . '/appServices.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     switch ($_POST['action']) {
@@ -167,12 +171,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             // Ověření, že článek existuje
-            $existingArticle = select('posts', 'id, file_path', "id = $articleId");
+            $existingArticle = select('posts', 'id, title, file_path, user_id, state', "id = $articleId");
             if (empty($existingArticle)) {
                 $_SESSION['error'] = "Článek nebyl nalezen.";
                 header('Location: ../Frontend/articles_overview.php');
                 exit();
             }
+            $articleTitle = $existingArticle[0]['title'] ?? ("Článek #$articleId");
+            $articleAuthorId = (int)($existingArticle[0]['user_id'] ?? 0);
+            $previousState = (int)($existingArticle[0]['state'] ?? 0);
             
             // Validace vstupních dat
             $title = trim($_POST['title'] ?? '');
@@ -298,8 +305,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             // Aktualizace článku - použijeme přímý SQL dotaz s prepared statement pro bezpečnost
-            require_once __DIR__ . '/../Database/db.php';
-            
             $setParts = [];
             $params = [];
             $types = '';
@@ -351,8 +356,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Přidání nových recenzentů
                 if (!empty($reviewerIds) && is_array($reviewerIds)) {
-                    require_once __DIR__ . '/../Database/db.php';
-                    
                     foreach ($reviewerIds as $reviewerId) {
                         $reviewerId = (int)$reviewerId;
                         if ($reviewerId > 0) {
@@ -392,6 +395,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $insertResult = insert($assignmentData, 'post_assignments');
                                 if ($insertResult) {
                                     $newReviewersAdded = true;
+                                    $message = sprintf('Byl vám přidělen článek "%s" k recenzi.', $articleTitle);
+                                    createNotification($reviewerId, $message, 'assignment', $articleId);
+
+                                    $reviewerContact = fetchUserContact($reviewerId);
+                                    if ($reviewerContact && !empty($reviewerContact['email'])) {
+                                        $assignerName = $_SESSION['user']['username'] ?? 'Redakce';
+                                        $link = buildFrontendUrl("/Frontend/review_article.php?id={$articleId}");
+                                        $emailBody = "Dobrý den {$reviewerContact['username']},\n\n".
+                                            "Byl vám přidělen článek \"{$articleTitle}\" k recenzi.\n".
+                                            "Přidělil vás {$assignerName}.\n\n".
+                                            "Na článek se můžete podívat zde: {$link}\n\n".
+                                            "Děkujeme,\nRedakce RSP";
+                                        sendEmail($reviewerContact['email'], 'Nový článek k recenzi', $emailBody, $reviewerId);
+                                    }
                                 }
                             }
                         }
@@ -439,6 +456,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
+                if ($state !== null && $state !== $previousState) {
+                    handleArticleStateChange($articleId, $articleAuthorId, $previousState, $state, $articleTitle);
+                }
+
                 $_SESSION['success'] = "Článek byl úspěšně aktualizován." . ($newReviewersAdded ? " Recenzenti byli přiřazeni a článek byl přepnut do stavu 'V recenzi'." : "");
                 header("Location: ../Frontend/edit_article.php?id=$articleId");
             } else {
@@ -456,5 +477,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['error'] = "Neplatný požadavek.";
     header('Location: ../Frontend/user.php');
 }
-?>
+
+if (!function_exists('handleArticleStateChange')) {
+    function handleArticleStateChange(int $articleId, int $authorId, int $oldState, int $newState, string $articleTitle): void
+    {
+        if (!$authorId || $oldState === $newState) {
+            return;
+        }
+
+        $stateName = getWorkflowStateName($newState);
+        if (!$stateName) {
+            return;
+        }
+
+        $authorContact = fetchUserContact($authorId);
+        if (!$authorContact) {
+            return;
+        }
+
+        $messages = [
+            'Vrácen k úpravám' => [
+                'notification' => sprintf('Článek "%s" byl vrácen k úpravám. Prosíme, zapracujte připomínky.', $articleTitle),
+                'subject' => 'Článek vrácen k úpravám',
+                'body' => "Dobrý den {$authorContact['username']},\n\n".
+                    "článek \"{$articleTitle}\" byl vrácen k úpravám na základě recenzního řízení.\n".
+                    "Přihlaste se prosím do systému a zapracujte změny.\n\n".
+                    "Děkujeme,\nRedakce RSP"
+            ],
+            'Schválen' => [
+                'notification' => sprintf('Článek "%s" byl schválen k publikaci. Gratulujeme!', $articleTitle),
+                'subject' => 'Článek schválen',
+                'body' => "Dobrý den {$authorContact['username']},\n\n".
+                    "článek \"{$articleTitle}\" byl schválen k publikaci. Děkujeme za spolupráci.\n\n".
+                    "Redakce RSP"
+            ]
+        ];
+
+        if (!isset($messages[$stateName])) {
+            return;
+        }
+
+        $payload = $messages[$stateName];
+        createNotification($authorId, $payload['notification'], 'article_state', $articleId);
+
+        if (!empty($authorContact['email'])) {
+            sendEmail($authorContact['email'], $payload['subject'], $payload['body'], $authorId);
+        }
+    }
+}
 

@@ -11,6 +11,7 @@ $showNewArticleButton = !empty($userRoleId) && $userRoleId != 6;
 
 // Zobrazení tlačítka "Přehled článků" pro role: Admin, Šéfredaktor, Recenzent, Redaktor, Autor (ne Čtenář)
 $showArticlesOverviewButton = !empty($userRoleId) && in_array($userRoleId, [1, 2, 3, 4, 5]);
+$showReviewerNotifications = !empty($userRoleId) && (int)$userRoleId === 3;
 ?>
 <header class="site-header">
     <nav class="navbar navbar-expand-lg navbar-dark" style="background: var(--brand)">
@@ -40,7 +41,38 @@ $showArticlesOverviewButton = !empty($userRoleId) && in_array($userRoleId, [1, 2
                         </li>
                     <?php endif; ?>
                 </ul>
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-3 header-actions">
+                    <?php if ($showReviewerNotifications): ?>
+                        <div 
+                            class="notification-center" 
+                            data-notifications-root 
+                            data-endpoint="../Backend/notificationControl.php"
+                        >
+                            <button 
+                                type="button" 
+                                class="notification-toggle" 
+                                aria-expanded="false"
+                                aria-controls="notificationDropdown"
+                                data-notifications-toggle
+                            >
+                                <span class="notification-icon" aria-hidden="true">🔔</span>
+                                <span class="notification-label">Upozornění</span>
+                                <span class="notification-badge" data-notifications-badge>0</span>
+                            </button>
+                            <div class="notification-dropdown" id="notificationDropdown" data-notifications-dropdown>
+                                <div class="notification-dropdown__header">
+                                    <strong>Upozornění</strong>
+                                    <span data-notifications-status>Načítám...</span>
+                                </div>
+                                <div class="notification-dropdown__body" data-notifications-list>
+                                    <div class="notification-empty">Žádná upozornění</div>
+                                </div>
+                                <div class="notification-dropdown__footer">
+                                    Přehled upozornění pro recenzenta
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                     <?php if (!empty($_SESSION['user']['username'])): ?>
                         <span class="text-white-50 small">Přihlášen: <?= e($_SESSION['user']['username']) ?></span>
                         <a class="btn btn-light btn-sm" href="./user.php">Účet</a>

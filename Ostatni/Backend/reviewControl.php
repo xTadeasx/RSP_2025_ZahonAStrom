@@ -2,6 +2,9 @@
 require_once __DIR__ . '/notAccess.php';
 require_once __DIR__ . '/../Database/dataControl.php';
 require_once __DIR__ . '/../Database/db.php';
+require_once __DIR__ . '/sendEmail.php';
+require_once __DIR__ . '/notificationService.php';
+require_once __DIR__ . '/appServices.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     switch ($_POST['action']) {
@@ -299,6 +302,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                     
+                    $assignmentOwnerId = fetchAssignmentOwnerId($articleId, $userId);
+                    $articleSummary = fetchPostSummary($articleId);
+                    $articleTitle = $articleSummary['title'] ?? ("Článek #$articleId");
+                    $reviewerName = $_SESSION['user']['username'] ?? 'Recenzent';
+
+                    if ($assignmentOwnerId) {
+                        $message = sprintf('Recenzent %s dokončil recenzi článku "%s".', $reviewerName, $articleTitle);
+                        createNotification($assignmentOwnerId, $message, 'review_submitted', $articleId);
+
+                        $ownerContact = fetchUserContact($assignmentOwnerId);
+                        if ($ownerContact && !empty($ownerContact['email'])) {
+                            $link = buildFrontendUrl("/Frontend/edit_article.php?id={$articleId}");
+                            $emailBody = "Dobrý den {$ownerContact['username']},\n\n".
+                                "recenzent {$reviewerName} právě odeslal recenzi článku \"{$articleTitle}\".\n".
+                                "Článek můžete zkontrolovat a rozhodnout o dalším postupu zde: {$link}\n\n".
+                                "Redakce RSP";
+                            sendEmail($ownerContact['email'], 'Recenzent dokončil posudek', $emailBody, $assignmentOwnerId);
+                        }
+                    }
+
                     $_SESSION['success'] = "Recenze byla úspěšně odeslána. Článek byl přepnut do stavu 'Vrácen k úpravám'.";
                     header("Location: ../Frontend/review_article.php?id=$articleId");
                 } else {
