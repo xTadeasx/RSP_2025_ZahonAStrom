@@ -52,8 +52,9 @@ if (!$article || empty($article['file_path'])) {
 $filePath = $article['file_path'];
 $fileName = basename($filePath);
 
-// Cesta k souboru - soubory jsou v uploads/ složce
-$uploadDir = __DIR__ . '/../uploads/';
+// Cesta k souboru - soubory jsou v downloads/ složce (nebo uploads/ pro zpětnou kompatibilitu)
+$downloadsDir = __DIR__ . '/../downloads/';
+$uploadsDir = __DIR__ . '/../uploads/';
 $fullPath = __DIR__ . '/../' . $filePath;
 
 // Ověření, že soubor existuje
@@ -63,22 +64,19 @@ if (!file_exists($fullPath)) {
 
 // Ověření, že se nejedná o path traversal útok
 $realPath = realpath($fullPath);
-$realUploadDir = realpath($uploadDir);
+$realDownloadsDir = realpath($downloadsDir);
+$realUploadsDir = realpath($uploadsDir);
 
-// Ověření, že cesta k souboru je v uploads/ složce
+// Ověření, že cesta k souboru je v downloads/ nebo uploads/ složce
 if (!$realPath) {
     die('Soubor nebyl nalezen.');
 }
 
-if (!$realUploadDir) {
-    // Pokud uploads/ složka neexistuje, vytvoříme ji
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
-    }
-    $realUploadDir = realpath($uploadDir);
-}
+// Kontrola, zda je soubor v downloads/ nebo uploads/ složce
+$isInDownloads = $realDownloadsDir && strpos($realPath, $realDownloadsDir) === 0;
+$isInUploads = $realUploadsDir && strpos($realPath, $realUploadsDir) === 0;
 
-if (!$realUploadDir || strpos($realPath, $realUploadDir) !== 0) {
+if (!$isInDownloads && !$isInUploads) {
     die('Neplatná cesta k souboru. Path traversal útok detekován.');
 }
 

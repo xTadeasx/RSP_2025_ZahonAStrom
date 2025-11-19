@@ -4,7 +4,7 @@
 
 Tento dokument popisuje kompletní workflow procesy, komunikaci mezi komponentami a automatizované změny stavů v systému pro správu vědeckého časopisu.
 
-**Poslední aktualizace:** 2025-01-17
+**Poslední aktualizace:** 2025-01-17 (aktualizováno: oprávnění pro vytváření článků, ukládání do downloads/)
 
 ---
 
@@ -26,10 +26,10 @@ Tento dokument popisuje kompletní workflow procesy, komunikaci mezi komponentam
 
 #### 1. Vytvoření článku → "Nový" (id = 1)
 
-**Kdy:** Autor vytvoří nový článek (`Frontend/clanek.php` → `Backend/postControl.php`)
+**Kdy:** Autor/Administrátor/Šéfredaktor/Redaktor vytvoří nový článek (`Frontend/clanek.php` → `Backend/postControl.php`)
 
 **Proces:**
-1. Autor vyplní formulář (název, abstrakt, obsah, soubor)
+1. Uživatel s oprávněním vyplní formulář (název, abstrakt, obsah, soubor)
 2. Validace: název, obsah a abstrakt jsou povinné
 3. Validace souboru: PDF, DOC, DOCX, max 10 MB
 4. Upload souboru: bezpečné pojmenování (`uniqid() + sanitize`)
@@ -123,9 +123,9 @@ $updatePostStateSql = "UPDATE posts SET state = ?, updated_at = ?, updated_by = 
 ### Přístup k funkcím
 
 #### Vytváření článků (`Frontend/clanek.php`)
-- **Přístup:** Pouze Autor (role_id = 5)
+- **Přístup:** Administrátor (1), Šéfredaktor (2), Redaktor (4), Autor (5)
 - **Kontrola:** `Backend/postControl.php` - `create_post`
-- **Viditelnost tlačítka:** Všechny role kromě Čtenáře (header.php)
+- **Viditelnost tlačítka:** Administrátor, Šéfredaktor, Redaktor, Autor (header.php)
 
 #### Přehled článků (`Frontend/articles_overview.php`)
 - **Admin, Šéfredaktor, Redaktor:** Všechny články
@@ -186,7 +186,7 @@ Backend/postControl.php (action=create_post)
     ↓ (validace)
 Database/dataControl.php (insert)
     ↓ (file upload)
-uploads/ (soubor)
+downloads/ (soubor)
     ↓ (vložení do DB)
 posts table (state = 1)
     ↓ (redirect)
@@ -227,6 +227,20 @@ Backend/reviewControl.php (action=create_review)
 Frontend/review_article.php (redirect s success message)
 ```
 
+#### 4. Interní zprávy (chat)
+
+```
+Frontend/index.php (chat widget)
+    ↓ (Form POST)
+Backend/chatControl.php (action=send_message)
+    ↓ (Validace, vytvoření chatu)
+Database/chats (pair)
+    ↓
+Database/chat_messages (insert)
+    ↓
+Frontend/index.php?chat_with={id} (redirect + přehled zpráv)
+```
+
 ---
 
 ## 🔒 Bezpečnostní opatření
@@ -240,7 +254,7 @@ Frontend/review_article.php (redirect s success message)
 - **Role-based access control (RBAC)**
 - **Kontrola role:** Před každou akcí se ověří `role_id` z session
 - **Příklady:**
-  - Vytváření článků: pouze Autor (5)
+  - Vytváření článků: Administrátor (1), Šéfredaktor (2), Redaktor (4), Autor (5)
   - Editace: pouze Admin (1), Šéfredaktor (2), Redaktor (4)
   - Recenze: pouze Recenzent (3) a musí být přiřazen
 
@@ -299,9 +313,9 @@ $_SESSION['error'] = "Chybová zpráva";
    - Chyba: přesměrování s error message
 
 2. **Uložení:**
-   - Adresář: `uploads/`
+   - Adresář: `downloads/`
    - Název: `uniqid('article_', true) + '_' + sanitized_filename`
-   - Cesta v DB: `uploads/filename.pdf`
+   - Cesta v DB: `downloads/filename.pdf`
 
 3. **Rollback:**
    - Pokud selže DB operace, soubor se smaže
@@ -377,7 +391,7 @@ $_SESSION['error'] = "Chybová zpráva";
 ### Header (`Frontend/Include/header.php`)
 
 **Tlačítka podle role:**
-- **"Nový článek":** Všechny role kromě Čtenáře (role_id != 6)
+- **"Nový článek":** Administrátor, Šéfredaktor, Redaktor, Autor (role_id in [1,2,4,5])
 - **"Přehled článků":** Admin, Šéfredaktor, Recenzent, Redaktor, Autor (role_id in [1,2,3,4,5])
 
 **Session data:**
@@ -398,10 +412,11 @@ $_SESSION['error'] = "Chybová zpráva";
 
 ### Scénář: Autor vytvoří článek → Recenze → Úpravy
 
-1. **Autor vytvoří článek:**
+1. **Uživatel s oprávněním vytvoří článek:**
    - `Frontend/clanek.php` → formulář
    - `Backend/postControl.php` → `create_post`
    - **Stav:** `state = 1` ("Nový")
+   - **Oprávnění:** Administrátor, Šéfredaktor, Redaktor, Autor
 
 2. **Admin přiřadí recenzenta:**
    - `Frontend/articles_overview.php` → "Editovat"
@@ -480,4 +495,8 @@ $_SESSION['error'] = "Chybová zpráva";
 **Dokument vytvořen:** 2025-01-17  
 **Autor:** AI Assistant (na základě analýzy kódu)  
 **Verze:** 1.0
+
+
+
+
 

@@ -3,12 +3,13 @@
 <?php require_once __DIR__ . '/Include/header.php'; ?>
 <?php require_once __DIR__ . '/../Database/dataControl.php'; ?>
 <?php
-// Ověření, že uživatel je v roli Autora (role_id = 5)
+// Ověření, že uživatel má oprávnění vytvářet články (Administrátor, Šéfredaktor, Redaktor, Autor)
 $userId = $_SESSION['user']['id'] ?? null;
 if ($userId) {
     $user = select('users', 'role_id', "id = $userId");
-    if (empty($user) || ($user[0]['role_id'] ?? null) != 5) {
-        $_SESSION['error'] = "Nemáte oprávnění vytvářet články. Musíte být v roli Autora.";
+    $userRole = $user[0]['role_id'] ?? null;
+    if (empty($user) || !in_array($userRole, [1, 2, 4, 5])) {
+        $_SESSION['error'] = "Nemáte oprávnění vytvářet články. Musíte být Administrátor, Šéfredaktor, Redaktor nebo Autor.";
         header('Location: user.php');
         exit();
     }

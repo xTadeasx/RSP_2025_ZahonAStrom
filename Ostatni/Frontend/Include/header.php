@@ -5,9 +5,9 @@
 // Role_id je uložena v session při přihlášení (Backend/login.php)
 $userRoleId = $_SESSION['user']['role_id'] ?? null;
 
-// Zobrazení tlačítka pro všechny role kromě čtenáře (role_id = 6)
+// Zobrazení tlačítka pro role: Administrátor, Šéfredaktor, Redaktor, Autor (1, 2, 4, 5)
 // Role: 1=Admin, 2=Šéfredaktor, 3=Recenzent, 4=Redaktor, 5=Autor, 6=Čtenář
-$showNewArticleButton = !empty($userRoleId) && $userRoleId != 6;
+$showNewArticleButton = !empty($userRoleId) && in_array($userRoleId, [1, 2, 4, 5]);
 
 // Zobrazení tlačítka "Přehled článků" pro role: Admin, Šéfredaktor, Recenzent, Redaktor, Autor (ne Čtenář)
 $showArticlesOverviewButton = !empty($userRoleId) && in_array($userRoleId, [1, 2, 3, 4, 5]);
@@ -37,6 +37,13 @@ $showReviewerNotifications = !empty($userRoleId) && (int)$userRoleId === 3;
                         <li class="nav-item">
                             <a class="nav-link" href="./articles_overview.php" style="color: #4CAF50; font-weight: 600; background: rgba(76, 175, 80, 0.1); border-radius: 4px; padding: 4px 12px !important; margin: 0 4px;">
                                 📋 Přehled článků
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                    <?php if (!empty($_SESSION['user']['username'])): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./chat.php" style="color: #5bc0de; font-weight: 600; background: rgba(91, 192, 222, 0.15); border-radius: 4px; padding: 4px 12px !important; margin: 0 4px;">
+                                💬 Zprávy
                             </a>
                         </li>
                     <?php endif; ?>

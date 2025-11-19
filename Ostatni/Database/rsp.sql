@@ -23,9 +23,6 @@ SET time_zone = "+00:00";
 
 -- --------------------------------------------------------
 
---
--- Struktura tabulky `comments`
---
 
 CREATE TABLE `comments` (
   `id` int NOT NULL,
@@ -35,6 +32,35 @@ CREATE TABLE `comments` (
   `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci DEFAULT NULL,
   `visibility` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci DEFAULT NULL,
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struktura tabulky `chats`
+--
+
+CREATE TABLE `chats` (
+  `id` int NOT NULL,
+  `user_one_id` int NOT NULL,
+  `user_two_id` int NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struktura tabulky `chat_messages`
+--
+
+CREATE TABLE `chat_messages` (
+  `id` int NOT NULL,
+  `chat_id` int NOT NULL,
+  `sender_id` int NOT NULL,
+  `receiver_id` int NOT NULL,
+  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci NOT NULL,
+  `is_read` tinyint(1) DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
 
@@ -241,6 +267,22 @@ ALTER TABLE `comments`
   ADD KEY `comments_author_fk` (`author_id`);
 
 --
+-- Indexy pro tabulku `chats`
+--
+ALTER TABLE `chats`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `chats_unique_pair` (`user_one_id`,`user_two_id`);
+
+--
+-- Indexy pro tabulku `chat_messages`
+--
+ALTER TABLE `chat_messages`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `chat_messages_chat_fk` (`chat_id`),
+  ADD KEY `chat_messages_sender_fk` (`sender_id`),
+  ADD KEY `chat_messages_receiver_fk` (`receiver_id`);
+
+--
 -- Indexy pro tabulku `issues`
 --
 ALTER TABLE `issues`
@@ -316,6 +358,18 @@ ALTER TABLE `comments`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT pro tabulku `chats`
+--
+ALTER TABLE `chats`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pro tabulku `chat_messages`
+--
+ALTER TABLE `chat_messages`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT pro tabulku `issues`
 --
 ALTER TABLE `issues`
@@ -379,6 +433,21 @@ ALTER TABLE `workflow`
 ALTER TABLE `comments`
   ADD CONSTRAINT `comments_author_fk` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `comments_post_fk` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`);
+
+--
+-- Omezení pro tabulku `chats`
+--
+ALTER TABLE `chats`
+  ADD CONSTRAINT `chats_user_one_fk` FOREIGN KEY (`user_one_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chats_user_two_fk` FOREIGN KEY (`user_two_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Omezení pro tabulku `chat_messages`
+--
+ALTER TABLE `chat_messages`
+  ADD CONSTRAINT `chat_messages_chat_fk` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chat_messages_receiver_fk` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `chat_messages_sender_fk` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Omezení pro tabulku `notifications`

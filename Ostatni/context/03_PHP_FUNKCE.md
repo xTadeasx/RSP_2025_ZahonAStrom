@@ -334,6 +334,26 @@ function e(string $value): string {
 ---
 
 ## 🛡️ Security functions (notAccess.php)
+## 💬 Chat funkce (chatControl.php)
+
+### Odeslání zprávy
+```php
+// POST action = 'send_message'
+require_once __DIR__ . '/../Backend/chatControl.php';
+```
+
+**Logika:**
+- Ověří přihlášení (`notAccess.php`)
+- Validuje, že příjemce existuje a není shodný s odesílatelem
+- Najde nebo založí záznam v `chats` (unikátní dvojice uživatelů)
+- Vloží zprávu do `chat_messages` (prepared statements)
+- Přesměruje zpět na `Frontend/index.php?chat_with={id}`
+
+**Data:**
+- `chat_messages.chat_id` – reference na konverzaci
+- `sender_id` / `receiver_id`
+- `message` – text zprávy
+- `is_read` – nastaveno na `0`, značí nepřečtené
 
 ### Access control
 ```php

@@ -18,10 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
             
-            // Ověření, že uživatel je v roli Autora (role_id = 5)
+            // Ověření, že uživatel má oprávnění vytvářet články (Administrátor, Šéfredaktor, Redaktor, Autor)
             $user = select('users', 'role_id', "id = $userId");
-            if (empty($user) || ($user[0]['role_id'] ?? null) != 5) {
-                $_SESSION['error'] = "Nemáte oprávnění vytvářet články. Musíte být v roli Autora.";
+            $userRole = $user[0]['role_id'] ?? null;
+            if (empty($user) || !in_array($userRole, [1, 2, 4, 5])) {
+                $_SESSION['error'] = "Nemáte oprávnění vytvářet články. Musíte být Administrátor, Šéfredaktor, Redaktor nebo Autor.";
                 header('Location: ../Frontend/user.php');
                 exit();
             }
@@ -63,9 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Zpracování nahrání souboru
             $filePath = null;
             if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = __DIR__ . '/../uploads/';
+                $uploadDir = __DIR__ . '/../downloads/';
                 
-                // Vytvoření složky pro uploady, pokud neexistuje
+                // Vytvoření složky pro downloady, pokud neexistuje
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
@@ -103,8 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Přesunutí souboru
                 if (move_uploaded_file($fileTmpName, $targetPath)) {
-                    // Uložení relativní cesty (pouze název souboru pro bezpečnost)
-                    $filePath = 'uploads/' . $safeFileName;
+                    // Uložení relativní cesty do databáze
+                    $filePath = 'downloads/' . $safeFileName;
                 } else {
                     $_SESSION['error'] = "Nepodařilo se nahrát soubor. Zkuste to prosím znovu.";
                     header('Location: ../Frontend/clanek.php');
@@ -232,9 +233,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Nahrání nového souboru
             if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = __DIR__ . '/../uploads/';
+                $uploadDir = __DIR__ . '/../downloads/';
                 
-                // Vytvoření složky pro uploady, pokud neexistuje
+                // Vytvoření složky pro downloady, pokud neexistuje
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
@@ -277,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Přesunutí souboru
                 if (move_uploaded_file($fileTmpName, $targetPath)) {
-                    $newFilePath = 'uploads/' . $safeFileName;
+                    $newFilePath = 'downloads/' . $safeFileName;
                     $fileChanged = true;
                 } else {
                     $_SESSION['error'] = "Nepodařilo se nahrát soubor. Zkuste to prosím znovu.";

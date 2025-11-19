@@ -130,6 +130,53 @@
 
 ---
 
+### 5. `chats` - Soukromé konverzace
+
+| Sloupec | Typ | Null | Klíč | Default | Popis |
+|---------|-----|------|------|---------|-------|
+| id | int(11) | NO | PRIMARY | AUTO_INCREMENT | Primární klíč |
+| user_one_id | int(11) | NO | FK | - | Jeden z účastníků (menší id) |
+| user_two_id | int(11) | NO | FK | - | Druhý účastník (větší id) |
+| created_at | datetime | YES | - | CURRENT_TIMESTAMP | Datum založení konverzace |
+
+**Foreign Keys:**
+- `user_one_id` → `users.id` (ON DELETE CASCADE)
+- `user_two_id` → `users.id` (ON DELETE CASCADE)
+
+**Indexy:**
+- PRIMARY (id)
+- UNIQUE (`user_one_id`, `user_two_id`) – zajišťuje jednu konverzaci mezi dvojicí
+
+**Poznámky:**
+- Před vložením se id účastníků seřadí (`min/max`), aby unikátní index fungoval.
+
+---
+
+### 6. `chat_messages` - Zprávy v konverzacích
+
+| Sloupec | Typ | Null | Klíč | Default | Popis |
+|---------|-----|------|------|---------|-------|
+| id | int(11) | NO | PRIMARY | AUTO_INCREMENT | Primární klíč |
+| chat_id | int(11) | NO | FK | - | Odkaz na tabulku `chats` |
+| sender_id | int(11) | NO | FK | - | Odesílatel zprávy |
+| receiver_id | int(11) | NO | FK | - | Příjemce zprávy |
+| message | text | NO | - | - | Obsah zprávy |
+| is_read | tinyint(1) | YES | - | 0 | Příznak přečtení |
+| created_at | datetime | YES | - | CURRENT_TIMESTAMP | Datum odeslání |
+
+**Foreign Keys:**
+- `chat_id` → `chats.id` (ON DELETE CASCADE)
+- `sender_id` → `users.id` (ON DELETE CASCADE)
+- `receiver_id` → `users.id` (ON DELETE CASCADE)
+
+**Indexy:**
+- PRIMARY (id)
+- KEY (`chat_id`)
+- KEY (`sender_id`)
+- KEY (`receiver_id`)
+
+---
+
 ## 🔗 ERD vztahy
 
 ```
@@ -147,6 +194,15 @@ posts
   ├─→ users (user_id)
   ├─→ users (created_by)
   └─→ users (updated_by)
+
+chats
+  ├─→ users (user_one_id)
+  └─→ users (user_two_id)
+
+chat_messages
+  ├─→ chats (chat_id)
+  ├─→ users (sender_id)
+  └─→ users (receiver_id)
 
 workflow
   ├─→ users (created_by)
@@ -253,8 +309,8 @@ INSERT INTO workflow (state) VALUES
 ## 🔄 Migrace
 
 ### Aktuální stav
-- Verze: 1.0
-- Poslední změna: 27. 10. 2025
+- Verze: 1.1
+- Poslední změna: 18. 11. 2025
 
 ### TODO migrace
 - Přidat sloupec `category_id` do `posts`

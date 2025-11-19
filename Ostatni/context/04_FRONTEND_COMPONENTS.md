@@ -78,13 +78,18 @@ Patička stránky
 
 **Sekce:**
 
-1. **Proč číst náš časopis**
+1. **Interní chat (pouze přihlášení)**
+   - Dva sloupce: seznam uživatelů + okno konverzace
+   - Zobrazení nepřečtených zpráv, historie, formulář pro odeslání
+   - Odeslání přes `Backend/chatControl.php`
+
+2. **Proč číst náš časopis**
    - Feature cards (3 ks)
    - Široké spektrum oborů
    - Důsledná recenze
    - Tým zkušených editorů
 
-2. **Nejnovější články**
+3. **Nejnovější články**
    - Grid cards s články
    - Demo data
    - Metadata (author, date)

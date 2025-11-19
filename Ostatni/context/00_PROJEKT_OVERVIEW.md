@@ -272,6 +272,7 @@ RSP_2025_ZahonAStrom/
 - ✅ File upload security
 - ✅ Input validation
 - ✅ Role-based access control (RBAC)
+- ✅ Interní soukromé zprávy mezi uživateli (chat)
 
 ### TODO 🔴
 - [ ] CSRF tokeny
@@ -308,7 +309,7 @@ RSP_2025_ZahonAStrom/
 - Články jsou načítány z databáze (`posts` tabulka)
 - Workflow stavy se automaticky mění při určitých akcích
 - Recenzní systém je plně funkční
-- Soubory článků se ukládají do `uploads/` adresáře
+- Soubory článků se ukládají do `downloads/` adresáře
 
 ## 📚 Dokumentace
 - **Workflow a komunikace:** `context/06_WORKFLOW_KOMUNIKACE.md`
