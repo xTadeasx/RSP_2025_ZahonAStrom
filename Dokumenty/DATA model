@@ -1,0 +1,69 @@
+erDiagram
+    USER {
+        int user_id PK
+        string name
+        string email
+        string password_hash
+        string role
+    }
+
+    ARTICLE {
+        int article_id PK
+        string title
+        string abstract
+        datetime created_at
+        int current_version_id FK
+        string status
+        int author_id FK
+    }
+
+    ARTICLEVERSION {
+        int version_id PK
+        int article_id FK
+        int version_number
+        string file_path
+        datetime uploaded_at
+    }
+
+    REVIEW {
+        int review_id PK
+        int article_id FK
+        int reviewer_id FK
+        int score
+        string comments
+        string recommendation
+        datetime submitted_at
+    }
+
+    WORKFLOWSTEP {
+        int step_id PK
+        int article_id FK
+        int assigned_to FK
+        string step_type
+        datetime created_at
+    }
+
+    NOTIFICATION {
+        int notification_id PK
+        int user_id FK
+        string message
+        string type
+        datetime created_at
+        boolean read
+    }
+
+    JOURNALISSUE {
+        int issue_id PK
+        int volume
+        int issue_number
+        date publication_date
+    }
+
+    USER ||--o{ ARTICLE : "writes"
+    ARTICLE ||--o{ ARTICLEVERSION : "has versions"
+    ARTICLE ||--o{ REVIEW : "has reviews"
+    USER ||--o{ REVIEW : "reviews"
+    ARTICLE ||--o{ WORKFLOWSTEP : "progress"
+    USER ||--o{ WORKFLOWSTEP : "manages"
+    USER ||--o{ NOTIFICATION : "receives"
+    JOURNALISSUE ||--o{ ARTICLE : "contains"
