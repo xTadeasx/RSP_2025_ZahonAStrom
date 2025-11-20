@@ -102,6 +102,22 @@ Tato složka obsahuje kompletní dokumentaci projektu pro rychlé porozumění s
 
 ---
 
+### 07_CHAT_NOTIFIKACE.md
+**Chat a notifikace**
+- Interní chat systém mezi uživateli
+- Databázové schéma (chats, chat_messages)
+- Backend implementace (chatControl.php)
+- Frontend implementace (chat.php)
+- Systém notifikací
+- API endpoint pro notifikace
+- Místa vytváření notifikací
+- Propojení s workflow
+- Bezpečnostní opatření
+
+**Pro:** Vývojáře, implementace komunikace, debugování chat/notifikací
+
+---
+
 ## 🚀 Quick start
 
 ### Pro vývojáře
@@ -110,6 +126,7 @@ Tato složka obsahuje kompletní dokumentaci projektu pro rychlé porozumění s
 3. Databáze: `02_DATABAZE_SCHÉMA.md`
 4. API: `03_PHP_FUNKCE.md`
 5. Workflow: `06_WORKFLOW_KOMUNIKACE.md`
+6. Chat/Notifikace: `07_CHAT_NOTIFIKACE.md`
 
 ### Pro frontend
 1. Přehled: `00_PROJEKT_OVERVIEW.md`
@@ -152,6 +169,8 @@ Tato složka obsahuje kompletní dokumentaci projektu pro rychlé porozumění s
 - ✅ Editace článků
 - ✅ Recenze článků (hodnocení, komentáře)
 - ✅ Stahování souborů článků
+- ✅ Interní soukromé zprávy mezi uživateli (chat)
+- ✅ Notifikace pro recenzenty
 
 ### Důležité TODOs 🔴
 - 🔴 CSRF protection
@@ -161,7 +180,7 @@ Tato složka obsahuje kompletní dokumentaci projektu pro rychlé porozumění s
 - 🔴 Paginace článků
 - 🔴 Admin panel
 - 🔴 Avatary uživatelů
-- 🔴 Notifikace uživatelů
+- 🟡 Rozšířit notifikace na všechny role (aktuálně jen recenzenti)
 - 🔴 Statistiky a reporty
 - 🔴 Export článků (PDF)
 - 🔴 Vylepšit workflow (schválení po recenzi)
@@ -210,9 +229,11 @@ RSP_2025_ZahonAStrom/
 ## 📝 Aktualizace
 
 **Poslední update**: 2025-01-17  
-**Verze dokumentace**: 2.0  
+**Verze dokumentace**: 2.1  
 **Autor**: AI Assistant (na základě analýzy kódu)  
-**Nové dokumenty**: `06_WORKFLOW_KOMUNIKACE.md` - Kompletní dokumentace workflow procesů
+**Nové dokumenty**: 
+- `06_WORKFLOW_KOMUNIKACE.md` - Kompletní dokumentace workflow procesů
+- `07_CHAT_NOTIFIKACE.md` - Dokumentace chat systému a notifikací
 
 ---
 
@@ -223,6 +244,7 @@ RSP_2025_ZahonAStrom/
 3. **Code review**: Použijte `03_PHP_FUNKCE.md` a `04_FRONTEND_COMPONENTS.md`
 4. **Security audit**: `05_SECURITY_BEST_PRACTICES.md`
 5. **Database issues**: `02_DATABAZE_SCHÉMA.md`
+6. **Chat/Notifikace**: `07_CHAT_NOTIFIKACE.md`
 
 ---
 

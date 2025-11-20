@@ -37,7 +37,7 @@ if (!function_exists('notificationEnsureSchema')) {
 }
 
 if (!function_exists('createNotification')) {
-    function createNotification(int $userId, string $message, ?string $type = null, ?int $relatedPostId = null): bool
+    function createNotification(int $userId, string $message, ?string $type = null, ?int $relatedPostId = null, ?int $senderId = null): bool
     {
         global $conn;
         if (!$conn) {
@@ -55,7 +55,56 @@ if (!function_exists('createNotification')) {
             'related_post_id' => $relatedPostId
         ];
 
-        return insert($data, 'notifications');
+        $notificationResult = insert($data, 'notifications');
+        
+        // Vytvoření záznamu do system_logs
+        if ($notificationResult && $senderId !== null && $relatedPostId !== null) {
+            // Získání jmen uživatelů a názvu článku pro log
+            $senderName = 'Neznámý uživatel';
+            $recipientName = 'Neznámý uživatel';
+            $postTitle = 'Neznámý článek';
+            
+            // Získání jména odesílatele
+            $sender = select('users', 'username', "id = $senderId");
+            if (!empty($sender)) {
+                $senderName = $sender[0]['username'] ?? 'Neznámý uživatel';
+            }
+            
+            // Získání jména příjemce
+            $recipient = select('users', 'username', "id = $userId");
+            if (!empty($recipient)) {
+                $recipientName = $recipient[0]['username'] ?? 'Neznámý uživatel';
+            }
+            
+            // Získání názvu článku
+            $post = select('posts', 'title', "id = $relatedPostId");
+            if (!empty($post)) {
+                $postTitle = $post[0]['title'] ?? 'Neznámý článek';
+            }
+            
+            // Vytvoření zprávy pro log
+            $logMessage = sprintf(
+                'Uživatel %s (ID: %d) přidal notifikaci uživateli %s (ID: %d) o článku "%s" (ID: %d). Typ: %s',
+                $senderName,
+                $senderId,
+                $recipientName,
+                $userId,
+                $postTitle,
+                $relatedPostId,
+                $type ?? 'Obecné'
+            );
+            
+            $logData = [
+                'user_id' => $senderId,
+                'event_type' => 'notification_created',
+                'level' => 'info',
+                'message' => $logMessage
+            ];
+            
+            insert($logData, 'system_logs');
+        }
+        
+        return $notificationResult;
     }
 }
 

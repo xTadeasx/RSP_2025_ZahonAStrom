@@ -201,6 +201,16 @@ form .actions{margin-top:12px}
 .chat-bubble.them .chat-bubble__meta{color:var(--muted)}
 .chat-form textarea{min-height:80px;resize:vertical}
 
+/* Oversight panel (redaktor) */
+.oversight-panel{max-height:420px;overflow:auto}
+.oversight-list{display:flex;flex-direction:column;gap:12px}
+.oversight-item{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:#fff;box-shadow:0 2px 6px rgba(78,24,53,.05)}
+.oversight-item__meta{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-bottom:6px}
+.oversight-item__participants{display:flex;flex-wrap:wrap;gap:6px;font-size:.9rem;color:var(--muted);margin-bottom:6px}
+.oversight-item__participants strong{color:var(--brand)}
+.oversight-item__arrow{color:var(--muted);font-weight:700;margin:0 4px}
+.oversight-item__message{font-size:.95rem;color:var(--text);background:#f9f7fa;border-radius:10px;padding:8px 10px;margin:0}
+
 @media (max-width: 720px){
   .footer-grid{grid-template-columns:1fr;gap:8px}
   .align-right{justify-self:start}

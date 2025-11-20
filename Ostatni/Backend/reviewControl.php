@@ -309,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     if ($assignmentOwnerId) {
                         $message = sprintf('Recenzent %s dokončil recenzi článku "%s".', $reviewerName, $articleTitle);
-                        createNotification($assignmentOwnerId, $message, 'review_submitted', $articleId);
+                        createNotification($assignmentOwnerId, $message, 'review_submitted', $articleId, $userId);
 
                         $ownerContact = fetchUserContact($assignmentOwnerId);
                         if ($ownerContact && !empty($ownerContact['email'])) {

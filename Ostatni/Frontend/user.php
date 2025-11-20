@@ -14,11 +14,12 @@ if ($userId) {
 }
 ?>
 <h1>Účet uživatele</h1>
-<?php if (in_array($userRole, [1, 2, 4, 5])): // Administrátor, Šéfredaktor, Redaktor, Autor ?>
-    <div style="margin-bottom: 16px;">
+<div style="margin-bottom: 16px;">
+    <a href="notifications.php" style="margin-right: 16px;">🔔 Moje notifikace</a>
+    <?php if (in_array($userRole, [1, 2, 4, 5])): // Administrátor, Šéfredaktor, Redaktor, Autor ?>
         <a href="clanek.php">Vytvořit nový článek</a>
-    </div>
-<?php endif; ?>
+    <?php endif; ?>
+</div>
 <form action="../Backend/userControl.php" method="POST">
     <input type="hidden" name="action" value="edit_user">
 

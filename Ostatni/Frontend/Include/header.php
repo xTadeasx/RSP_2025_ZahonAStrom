@@ -46,6 +46,11 @@ $showReviewerNotifications = !empty($userRoleId) && (int)$userRoleId === 3;
                                 💬 Zprávy
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./notifications.php" style="color: #ff9800; font-weight: 600; background: rgba(255, 152, 0, 0.15); border-radius: 4px; padding: 4px 12px !important; margin: 0 4px;">
+                                🔔 Notifikace
+                            </a>
+                        </li>
                     <?php endif; ?>
                 </ul>
                 <div class="d-flex align-items-center gap-3 header-actions">

@@ -397,7 +397,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 if ($insertResult) {
                                     $newReviewersAdded = true;
                                     $message = sprintf('Byl vám přidělen článek "%s" k recenzi.', $articleTitle);
-                                    createNotification($reviewerId, $message, 'assignment', $articleId);
+                                    createNotification($reviewerId, $message, 'assignment', $articleId, $userId);
 
                                     $reviewerContact = fetchUserContact($reviewerId);
                                     if ($reviewerContact && !empty($reviewerContact['email'])) {
@@ -458,7 +458,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 if ($state !== null && $state !== $previousState) {
-                    handleArticleStateChange($articleId, $articleAuthorId, $previousState, $state, $articleTitle);
+                    handleArticleStateChange($articleId, $articleAuthorId, $previousState, $state, $articleTitle, $userId);
                 }
 
                 $_SESSION['success'] = "Článek byl úspěšně aktualizován." . ($newReviewersAdded ? " Recenzenti byli přiřazeni a článek byl přepnut do stavu 'V recenzi'." : "");
@@ -480,7 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if (!function_exists('handleArticleStateChange')) {
-    function handleArticleStateChange(int $articleId, int $authorId, int $oldState, int $newState, string $articleTitle): void
+    function handleArticleStateChange(int $articleId, int $authorId, int $oldState, int $newState, string $articleTitle, ?int $senderId = null): void
     {
         if (!$authorId || $oldState === $newState) {
             return;
@@ -494,6 +494,11 @@ if (!function_exists('handleArticleStateChange')) {
         $authorContact = fetchUserContact($authorId);
         if (!$authorContact) {
             return;
+        }
+
+        // Pokud není zadán senderId, zkusíme ho získat z session
+        if ($senderId === null && session_status() === PHP_SESSION_ACTIVE) {
+            $senderId = $_SESSION['user']['id'] ?? null;
         }
 
         $messages = [
@@ -519,7 +524,7 @@ if (!function_exists('handleArticleStateChange')) {
         }
 
         $payload = $messages[$stateName];
-        createNotification($authorId, $payload['notification'], 'article_state', $articleId);
+        createNotification($authorId, $payload['notification'], 'article_state', $articleId, $senderId);
 
         if (!empty($authorContact['email'])) {
             sendEmail($authorContact['email'], $payload['subject'], $payload['body'], $authorId);
