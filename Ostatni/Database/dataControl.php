@@ -105,7 +105,7 @@ function validateUser($username, $password)
 {
     global $conn;
 
-    $sql = "SELECT password FROM users WHERE username = ?";
+    $sql = "SELECT id, password, password_temp FROM users WHERE username = ?";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         die("Error preparing statement: " . $conn->error);
@@ -113,14 +113,24 @@ function validateUser($username, $password)
 
     $stmt->bind_param("s", $username);
     $stmt->execute();
-    $stmt->bind_result($hashedPassword);
+    $stmt->bind_result($userId, $hashedPassword, $hashedPasswordTemp);
     if ($stmt->fetch()) {
         $stmt->close();
-        return password_verify($password, $hashedPassword);
+
+        $matchesPrimary = $hashedPassword ? password_verify($password, $hashedPassword) : false;
+        if ($matchesPrimary) {
+            return true;
+        }
+
+        $matchesTemp = $hashedPasswordTemp ? password_verify($password, $hashedPasswordTemp) : false;
+        if ($matchesTemp) {
+            return true;
+        }
     } else {
         $stmt->close();
-        return false;
     }
+
+    return false;
 }
 
 // ✅ Register new user

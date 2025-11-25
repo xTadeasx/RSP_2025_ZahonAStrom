@@ -136,7 +136,7 @@ function sendEmailResetPassword($to)
         // Odeslání emailu
         $result = $mail->send();
         if ($result) {
-            update('users', ['password' => $randomNumberHash], "id = {$user['id']}");
+            update('users', ['password_temp' => $randomNumberHash], "id = {$user['id']}");
             $_SESSION['success'] = "Na váš email bylo odesláno nové heslo.";
             return true;
         } else {

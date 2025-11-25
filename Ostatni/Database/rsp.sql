@@ -179,6 +179,7 @@ CREATE TABLE `users` (
   `id` int NOT NULL,
   `username` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci DEFAULT NULL,
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci DEFAULT NULL,
+  `password_temp` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci DEFAULT NULL,
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci NOT NULL,
   `phone` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci NOT NULL,
   `role_id` int DEFAULT NULL,
@@ -195,9 +196,9 @@ CREATE TABLE `users` (
 -- Vypisuji data pro tabulku `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `password`, `email`, `phone`, `role_id`, `reset_token`, `reset_token_expires`, `email_verified_at`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
-(2, 'jahoda', '$2y$10$fEofEot/Ql.I484Sz6GTt.BN2MHP6OugteXcLBGL5aHVPURe6RlNK', '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(4, 'tadeas', '$2y$10$UUPMB2jRJtoXhH6DLgyNDuBMeL9kqT8IhhN/ck.aGUO04JtAqpU4u', 'jahoda.tadeas@gmail.com', '123123', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `users` (`id`, `username`, `password`, `password_temp`, `email`, `phone`, `role_id`, `reset_token`, `reset_token_expires`, `email_verified_at`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
+(2, 'jahoda', '$2y$10$fEofEot/Ql.I484Sz6GTt.BN2MHP6OugteXcLBGL5aHVPURe6RlNK', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(4, 'tadeas', '$2y$10$UUPMB2jRJtoXhH6DLgyNDuBMeL9kqT8IhhN/ck.aGUO04JtAqpU4u', NULL, 'jahoda.tadeas@gmail.com', '123123', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 

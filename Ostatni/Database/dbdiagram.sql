@@ -28,6 +28,7 @@ CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(255),
   password VARCHAR(255),
+  password_temp VARCHAR(255),
   email VARCHAR(255) NOT NULL,
   phone VARCHAR(255) NOT NULL,
   role_id INT,
