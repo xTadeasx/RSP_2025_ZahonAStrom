@@ -1,0 +1,17 @@
+Odkaz na aplikaci: http://zahonastrom.kvalitne.cz:8080/Frontend/index.php
+Přístupové údaje ke všem implementovaným rolím:
+Šéfredaktor
+login: sef
+heslo: sef
+Recenzent
+login: rec
+heslo: rec
+Redaktor
+login: red
+heslo: red
+Autor
+login: aut
+heslo: aut
+Čtenář
+login: cte
+heslo: cte
