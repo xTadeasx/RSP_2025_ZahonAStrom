@@ -46,6 +46,10 @@ try {
                 p.published_at,
                 p.state as post_state,
                 p.user_id as author_id,
+                p.final_decision,
+                p.final_note,
+                p.final_decided_at,
+                p.final_decided_by,
                 u.username as author_username,
                 w.state as workflow_state
             FROM posts p
@@ -280,6 +284,36 @@ try {
                 </select>
                 <div style="font-size: 0.875rem; color: var(--muted); margin-top: 4px;">Aktuální stav: <?= e($article['workflow_state'] ?? 'Nezadáno') ?></div>
             </div>
+
+            <?php if (in_array($userRoleId, [1,2])): ?>
+            <div style="margin-bottom: 18px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);">
+                <label for="final_decision" style="font-weight: 600;">Finální rozhodnutí</label>
+                <select 
+                    id="final_decision" 
+                    name="final_decision" 
+                    style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-top: 6px; background: white;"
+                >
+                    <option value="">-- Nechat beze změny --</option>
+                    <option value="approve" <?= ($article['final_decision'] ?? '') === 'approve' ? 'selected' : '' ?>>Schválit k publikaci</option>
+                    <option value="reject" <?= ($article['final_decision'] ?? '') === 'reject' ? 'selected' : '' ?>>Zamítnout</option>
+                </select>
+                <div style="margin-top: 10px;">
+                    <label for="final_note">Poznámka k rozhodnutí</label>
+                    <textarea 
+                        id="final_note" 
+                        name="final_note" 
+                        rows="3" 
+                        placeholder="Důvod rozhodnutí, podmínky, další kroky"
+                        style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-top: 6px; font-family: inherit;"
+                    ><?= e($article['final_note'] ?? '') ?></textarea>
+                </div>
+                <?php if (!empty($article['final_decided_at'])): ?>
+                    <div style="color: var(--muted); font-size: 0.9rem; margin-top: 6px;">
+                        Rozhodnuto: <?= date('d. m. Y H:i', strtotime($article['final_decided_at'])) ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
             
             <div style="margin-bottom: 18px;">
                 <label for="file">
@@ -412,6 +446,89 @@ try {
                 </small>
             </div>
         </form>
+        
+        <!-- Sekce recenzí a reakcí - pouze pro redaktory/šéfredaktory -->
+        <?php if (in_array($userRoleId, [1, 2, 4])): ?>
+            <?php
+            // Načtení všech recenzí s reakcemi autora
+            $allReviews = [];
+            try {
+                $reviewsSql = "SELECT pr.*, u.username AS reviewer_name, u2.username AS author_name
+                              FROM post_reviews pr
+                              LEFT JOIN users u ON pr.reviewer_id = u.id
+                              LEFT JOIN users u2 ON (SELECT user_id FROM posts WHERE id = pr.post_id) = u2.id
+                              WHERE pr.post_id = ?
+                              ORDER BY pr.created_at DESC";
+                $reviewsStmt = $conn->prepare($reviewsSql);
+                if ($reviewsStmt) {
+                    $reviewsStmt->bind_param("i", $articleId);
+                    $reviewsStmt->execute();
+                    if (method_exists($reviewsStmt, 'get_result')) {
+                        $reviewsResult = $reviewsStmt->get_result();
+                        if ($reviewsResult) {
+                            while ($row = $reviewsResult->fetch_assoc()) {
+                                $allReviews[] = $row;
+                            }
+                        }
+                    }
+                    $reviewsStmt->close();
+                }
+            } catch (Exception $e) {
+                error_log("Chyba při načítání recenzí: " . $e->getMessage());
+            }
+            ?>
+            <div style="margin-top: 32px; padding: 20px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
+                <h3 style="margin-top: 0;">Recenze a reakce (celá konverzace)</h3>
+                <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 16px;">
+                    Jako redaktor vidíte všechny recenze a reakce autora.
+                </p>
+                
+                <?php if (empty($allReviews)): ?>
+                    <p style="color: var(--muted); font-style: italic;">Zatím nejsou žádné recenze.</p>
+                <?php else: ?>
+                    <div style="display: grid; gap: 16px;">
+                        <?php foreach ($allReviews as $rev): ?>
+                            <div style="padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap;">
+                                    <div>
+                                        <strong>Recenzent:</strong> <?= e($rev['reviewer_name'] ?? 'Neznámý') ?>
+                                        <span style="color: var(--muted); font-size: 0.9rem; margin-left: 8px;">
+                                            (<?= date('d. m. Y H:i', strtotime($rev['created_at'])) ?>)
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-bottom: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; font-size: 0.9rem;">
+                                    <div>Aktualita: <strong><?= (int)$rev['score_actuality'] ?>/5</strong></div>
+                                    <div>Originalita: <strong><?= (int)$rev['score_originality'] ?>/5</strong></div>
+                                    <div>Jazyk: <strong><?= (int)$rev['score_language'] ?>/5</strong></div>
+                                    <div>Odbornost: <strong><?= (int)$rev['score_expertise'] ?>/5</strong></div>
+                                </div>
+                                
+                                <?php if (!empty($rev['comment'])): ?>
+                                    <div style="margin-bottom: 12px; padding: 12px; background: var(--bg); border-radius: 6px;">
+                                        <strong>Komentář recenzenta:</strong>
+                                        <div style="margin-top: 6px; white-space: pre-wrap;"><?= e($rev['comment']) ?></div>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <?php if (!empty($rev['author_comment'])): ?>
+                                    <div style="margin-top: 12px; padding: 12px; background: #e8f5e9; border-left: 4px solid var(--brand); border-radius: 6px;">
+                                        <strong>Reakce autora:</strong>
+                                        <div style="margin-top: 6px; white-space: pre-wrap;"><?= e($rev['author_comment']) ?></div>
+                                        <?php if (!empty($rev['author_comment_at'])): ?>
+                                            <div style="color: var(--muted); font-size: 0.85rem; margin-top: 6px;">
+                                                Odesláno: <?= date('d. m. Y H:i', strtotime($rev['author_comment_at'])) ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 

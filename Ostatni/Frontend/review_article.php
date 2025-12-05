@@ -127,6 +127,8 @@ try {
                     score_language,
                     score_expertise,
                     comment,
+                    author_comment,
+                    author_comment_at,
                     created_at,
                     updated_at
                 FROM post_reviews
@@ -144,7 +146,7 @@ try {
             }
         } else {
             // Fallback
-            $reviewStmt->bind_result($reviewId, $score_actuality, $score_originality, $score_language, $score_expertise, $comment, $created_at, $updated_at);
+            $reviewStmt->bind_result($reviewId, $score_actuality, $score_originality, $score_language, $score_expertise, $comment, $author_comment, $author_comment_at, $created_at, $updated_at);
             if ($reviewStmt->fetch()) {
                 $existingReview = [
                     'id' => $reviewId,
@@ -153,6 +155,8 @@ try {
                     'score_language' => $score_language,
                     'score_expertise' => $score_expertise,
                     'comment' => $comment,
+                    'author_comment' => $author_comment,
+                    'author_comment_at' => $author_comment_at,
                     'created_at' => $created_at,
                     'updated_at' => $updated_at
                 ];
@@ -328,6 +332,16 @@ $pageTitle = $isEditMode ? "Upravit recenzi" : "Napsat recenzi";
                         <br><strong>Poslední úprava:</strong> <?= date('d. m. Y H:i', strtotime($existingReview['updated_at'])) ?>
                     <?php endif; ?>
                 </div>
+
+                <?php if (!empty($existingReview['author_comment'])): ?>
+                    <div style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); margin-bottom: 20px;">
+                        <strong>Reakce autora:</strong>
+                        <div style="margin-top: 8px; white-space: pre-wrap;"><?= e($existingReview['author_comment']) ?></div>
+                        <?php if (!empty($existingReview['author_comment_at'])): ?>
+                            <div style="color: var(--muted); font-size: 0.85rem; margin-top: 6px;">Odesláno: <?= date('d. m. Y H:i', strtotime($existingReview['author_comment_at'])) ?></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
 
             <div class="actions">

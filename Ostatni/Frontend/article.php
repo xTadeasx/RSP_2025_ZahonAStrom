@@ -165,6 +165,87 @@ $keywords = $article['keywords'] ?? '';
     <?php endif; ?>
   </div>
 
+  <!-- Sekce komentářů -->
+  <?php
+  // Komentáře jsou zobrazeny jen u publikovaných článků
+  $workflowState = $article['workflow_state'] ?? '';
+  $showComments = in_array($workflowState, ['Schválen', 'Publikováno']);
+  
+  if ($showComments):
+    // Načtení komentářů
+    $comments = [];
+    try {
+        $commentsSql = "SELECT c.*, u.username AS author_name
+                       FROM comments c
+                       LEFT JOIN users u ON c.author_id = u.id
+                       WHERE c.post_id = ? AND c.visibility = 'public'
+                       ORDER BY c.created_at ASC";
+        $commentsStmt = $conn->prepare($commentsSql);
+        if ($commentsStmt) {
+            $commentsStmt->bind_param("i", $articleId);
+            $commentsStmt->execute();
+            if (method_exists($commentsStmt, 'get_result')) {
+                $commentsResult = $commentsStmt->get_result();
+                if ($commentsResult) {
+                    while ($row = $commentsResult->fetch_assoc()) {
+                        $comments[] = $row;
+                    }
+                }
+            }
+            $commentsStmt->close();
+        }
+    } catch (Exception $e) {
+        error_log("Chyba při načítání komentářů: " . $e->getMessage());
+    }
+  ?>
+  <div class="article-comments" style="margin-top: 48px; padding-top: 32px; border-top: 2px solid var(--border);">
+    <h2 style="margin-bottom: 20px;">Komentáře (<?= count($comments) ?>)</h2>
+    
+    <?php if (!empty($_SESSION['user']['id'])): ?>
+      <!-- Formulář pro přidání komentáře -->
+      <form action="../Backend/commentControl.php" method="POST" style="margin-bottom: 32px; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
+        <input type="hidden" name="action" value="add_comment">
+        <input type="hidden" name="post_id" value="<?= $articleId ?>">
+        <label for="comment_content" style="display: block; margin-bottom: 8px; font-weight: 600;">Přidat komentář:</label>
+        <textarea 
+          id="comment_content" 
+          name="content" 
+          rows="4" 
+          required
+          placeholder="Napište svůj komentář..."
+          style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; box-sizing: border-box;"
+        ></textarea>
+        <button type="submit" style="margin-top: 12px; background: var(--brand); color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          Odeslat komentář
+        </button>
+      </form>
+    <?php else: ?>
+      <p style="color: var(--muted); margin-bottom: 24px;">
+        <a href="./login.php" style="color: var(--brand); text-decoration: underline;">Přihlaste se</a> pro přidání komentáře.
+      </p>
+    <?php endif; ?>
+    
+    <!-- Seznam komentářů -->
+    <?php if (empty($comments)): ?>
+      <p style="color: var(--muted); font-style: italic;">Zatím nejsou žádné komentáře.</p>
+    <?php else: ?>
+      <div style="display: grid; gap: 16px;">
+        <?php foreach ($comments as $comment): ?>
+          <div style="padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <strong><?= e($comment['author_name'] ?? 'Anonymní') ?></strong>
+              <span style="color: var(--muted); font-size: 0.9rem;">
+                <?= date('d. m. Y H:i', strtotime($comment['created_at'])) ?>
+              </span>
+            </div>
+            <div style="white-space: pre-wrap; color: var(--text);"><?= e($comment['content']) ?></div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
+
   <footer class="article-footer" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);">
     <a class="btn btn-small" href="./index.php">← Zpět na domovskou stránku</a>
     <?php if (!empty($article['file_path'])): ?>

@@ -25,7 +25,7 @@ if (empty($userRoleId) || !in_array($userRoleId, [1, 2, 3, 4, 5])) {
 $filterState = isset($_GET['stav']) ? (int)$_GET['stav'] : null;
 $filterTitle = isset($_GET['nazev']) ? trim($_GET['nazev']) : '';
 
-// Načtení všech stavů workflow pro filtr
+// Načtení všech stavů workflow pro filtr a pro přehled
 $workflowStates = [];
 try {
     $statesQuery = "SELECT id, state FROM workflow ORDER BY id";
@@ -37,6 +37,46 @@ try {
     }
 } catch (Exception $e) {
     error_log("Chyba při načítání stavů workflow: " . $e->getMessage());
+}
+
+// Přehled počtů podle stavů pro šéfredaktora/admina/redaktora
+$stateSummary = [];
+$totalAll = 0;
+try {
+    if (in_array($userRoleId, [1, 2, 4])) {
+        $summarySql = "SELECT w.state AS name, COUNT(*) AS total
+                       FROM posts p
+                       LEFT JOIN workflow w ON p.state = w.id
+                       GROUP BY w.state
+                       ORDER BY w.state";
+    } elseif ($userRoleId == 3) {
+        // Recenzent – jen přiřazené články
+        $summarySql = "SELECT w.state AS name, COUNT(*) AS total
+                       FROM posts p
+                       INNER JOIN post_assignments pa ON p.id = pa.post_id
+                       LEFT JOIN workflow w ON p.state = w.id
+                       WHERE pa.reviewer_id = " . (int)$userId . "
+                       GROUP BY w.state
+                       ORDER BY w.state";
+    } else {
+        // Autor – jen vlastní články
+        $summarySql = "SELECT w.state AS name, COUNT(*) AS total
+                       FROM posts p
+                       LEFT JOIN workflow w ON p.state = w.id
+                       WHERE p.user_id = " . (int)$userId . "
+                       GROUP BY w.state
+                       ORDER BY w.state";
+    }
+    $summaryResult = $conn->query($summarySql);
+    if ($summaryResult && $summaryResult->num_rows > 0) {
+        while ($row = $summaryResult->fetch_assoc()) {
+            $stateName = $row['name'] ?: 'Nezadáno';
+            $stateSummary[$stateName] = (int)$row['total'];
+            $totalAll += (int)$row['total'];
+        }
+    }
+} catch (Exception $e) {
+    error_log("Chyba při načítání přehledu stavů: " . $e->getMessage());
 }
 
 // Načtení článků podle role
@@ -217,6 +257,21 @@ function getStateColor($state) {
         <h1 style="margin: 0;"><?= e($pageTitle) ?></h1>
     </div>
     <div class="section-body">
+        <?php if (!empty($stateSummary)): ?>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                <div style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);">
+                    <div style="font-size: 0.85rem; color: var(--muted);">Celkem</div>
+                    <div style="font-size: 1.4rem; font-weight: 700;"><?= (int)$totalAll ?></div>
+                </div>
+                <?php foreach ($stateSummary as $stateName => $count): ?>
+                    <div style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+                        <div style="font-size: 0.85rem; color: var(--muted);"><?= e($stateName) ?></div>
+                        <div style="font-size: 1.2rem; font-weight: 700;"><?= (int)$count ?></div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
         <!-- Formulář pro filtry -->
         <form method="GET" action="./articles_overview.php" style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
             <div class="filter-form-grid" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end;">
@@ -385,6 +440,11 @@ function getStateColor($state) {
                                         <?php if (in_array($userRoleId, [1, 2, 4])): // Pouze Admin, Šéfredaktor, Redaktor ?>
                                             <a href="./edit_article.php?id=<?= $article['id'] ?>" class="btn btn-small" style="text-decoration: none; background: var(--brand-2); color: white;">
                                                 Editovat
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if ($userRoleId == 5): // Autor ?>
+                                            <a href="./article_feedback.php?id=<?= $article['id'] ?>" class="btn btn-small" style="text-decoration: none; background: var(--brand); color: white;">
+                                                Reagovat na recenze
                                             </a>
                                         <?php endif; ?>
                                         <?php if ($userRoleId == 3): // Recenzent ?>

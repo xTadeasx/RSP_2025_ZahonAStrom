@@ -116,7 +116,11 @@ CREATE TABLE `posts` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `created_by` int DEFAULT NULL,
-  `updated_by` int DEFAULT NULL
+  `updated_by` int DEFAULT NULL,
+  `final_decision` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci DEFAULT NULL,
+  `final_note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci,
+  `final_decided_at` datetime DEFAULT NULL,
+  `final_decided_by` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
 
 -- --------------------------------------------------------
@@ -150,6 +154,8 @@ CREATE TABLE `post_reviews` (
   `score_language` tinyint NOT NULL,
   `score_expertise` tinyint NOT NULL,
   `comment` text CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci,
+  `author_comment` text CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci,
+  `author_comment_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;

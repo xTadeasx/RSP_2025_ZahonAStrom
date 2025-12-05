@@ -190,6 +190,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $topic = trim($_POST['topic'] ?? '');
             $authors = trim($_POST['authors'] ?? '');
             $state = isset($_POST['state']) ? (int)$_POST['state'] : null;
+            $finalDecision = $_POST['final_decision'] ?? null;
+            $finalNote = trim($_POST['final_note'] ?? '');
             
             if (empty($title)) {
                 $_SESSION['error'] = "Název článku je povinný.";
@@ -287,6 +289,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
+            // Mapování finálního rozhodnutí na workflow stav (jen Admin/Šéfredaktor)
+            if (in_array($user[0]['role_id'] ?? null, [1, 2]) && !empty($finalDecision)) {
+                $decisionStateName = null;
+                if ($finalDecision === 'approve') {
+                    $decisionStateName = 'Schválen';
+                } elseif ($finalDecision === 'reject') {
+                    $decisionStateName = 'Zamítnut';
+                }
+
+                if ($decisionStateName !== null) {
+                    $workflowState = select('workflow', 'id', "state = '" . $conn->real_escape_string($decisionStateName) . "'");
+                    if (!empty($workflowState)) {
+                        $state = (int)$workflowState[0]['id'];
+                    }
+                }
+            }
+
             // Příprava dat pro aktualizaci
             $updateData = [
                 'title' => $title,
@@ -299,6 +318,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'updated_at' => date('Y-m-d H:i:s'),
                 'updated_by' => $userId
             ];
+
+            if (in_array($user[0]['role_id'] ?? null, [1, 2])) {
+                if (!empty($finalDecision)) {
+                    $updateData['final_decision'] = $finalDecision;
+                    $updateData['final_decided_at'] = date('Y-m-d H:i:s');
+                    $updateData['final_decided_by'] = $userId;
+                }
+                $updateData['final_note'] = !empty($finalNote) ? $finalNote : null;
+            }
             
             // Přidání file_path pouze pokud se změnil
             if ($fileChanged) {
@@ -467,6 +495,244 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['error'] = "Došlo k chybě při aktualizaci článku.";
                 header("Location: ../Frontend/edit_article.php?id=$articleId");
             }
+            break;
+
+        case 'author_update_version':
+            $userId = $_SESSION['user']['id'] ?? null;
+            $articleId = isset($_POST['article_id']) ? (int)$_POST['article_id'] : 0;
+            $authorNote = trim($_POST['author_note'] ?? '');
+
+            if (!$userId) {
+                $_SESSION['error'] = "Musíte být přihlášeni.";
+                header('Location: ../Frontend/login.php');
+                exit();
+            }
+
+            // Jen autor svého článku
+            $articleRow = select('posts', 'id, user_id, state, file_path', "id = $articleId");
+            if (empty($articleRow) || (int)$articleRow[0]['user_id'] !== (int)$userId) {
+                $_SESSION['error'] = "Nemáte oprávnění nahrát novou verzi tohoto článku.";
+                header('Location: ../Frontend/articles_overview.php');
+                exit();
+            }
+
+            if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+                $_SESSION['error'] = "Soubor je povinný.";
+                header("Location: ../Frontend/article_feedback.php?id=$articleId");
+                exit();
+            }
+
+            $uploadDir = __DIR__ . '/../downloads/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $file = $_FILES['file'];
+            $fileName = $file['name'];
+            $fileTmpName = $file['tmp_name'];
+            $fileSize = $file['size'];
+            $allowedExtensions = ['pdf', 'doc', 'docx'];
+            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            if (!in_array($fileExtension, $allowedExtensions)) {
+                $_SESSION['error'] = "Neplatný typ souboru. Povolené formáty: PDF, DOC, DOCX.";
+                header("Location: ../Frontend/article_feedback.php?id=$articleId");
+                exit();
+            }
+
+            $maxSize = 10 * 1024 * 1024; // 10 MB
+            if ($fileSize > $maxSize) {
+                $_SESSION['error'] = "Soubor je příliš velký. Maximální velikost: 10 MB.";
+                header("Location: ../Frontend/article_feedback.php?id=$articleId");
+                exit();
+            }
+
+            // Smazat starý soubor
+            $currentPath = $articleRow[0]['file_path'] ?? null;
+            if ($currentPath && file_exists(__DIR__ . '/../' . $currentPath)) {
+                unlink(__DIR__ . '/../' . $currentPath);
+            }
+
+            $safeFileName = uniqid('article_', true) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $fileName);
+            $targetPath = $uploadDir . $safeFileName;
+            if (!move_uploaded_file($fileTmpName, $targetPath)) {
+                $_SESSION['error'] = "Nepodařilo se nahrát soubor.";
+                header("Location: ../Frontend/article_feedback.php?id=$articleId");
+                exit();
+            }
+
+            // Nastavit stav na "Odeslaný" pokud existuje
+            $newStateId = $articleRow[0]['state'];
+            $wf = select('workflow', 'id', "state = 'Odeslaný'");
+            if (!empty($wf)) {
+                $newStateId = (int)$wf[0]['id'];
+            }
+
+            $updateData = [
+                'file_path' => 'downloads/' . $safeFileName,
+                'state' => $newStateId,
+                'updated_at' => date('Y-m-d H:i:s'),
+                'updated_by' => $userId
+            ];
+            if (!empty($authorNote)) {
+                $updateData['final_note'] = $authorNote; // využijeme final_note jako poznámku autora k revizi
+            }
+
+            $result = update('posts', $updateData, "id = $articleId");
+            if ($result) {
+                // Notifikace pro zadavatele a recenzenty
+                $assignments = select('post_assignments', 'reviewer_id', "post_id = $articleId");
+                $articleTitle = select('posts', 'title', "id = $articleId")[0]['title'] ?? ("Článek #$articleId");
+                foreach ($assignments as $assign) {
+                    $rid = (int)$assign['reviewer_id'];
+                    $msg = sprintf('Autor nahrál novou verzi článku "%s".', $articleTitle);
+                    createNotification($rid, $msg, 'article_updated', $articleId, $userId);
+                }
+                $_SESSION['success'] = "Nová verze byla nahrána a článek byl znovu odeslán.";
+            } else {
+                $_SESSION['error'] = "Nepodařilo se uložit novou verzi.";
+            }
+            header("Location: ../Frontend/article_feedback.php?id=$articleId");
+            break;
+
+        case 'author_reply_review':
+            $userId = $_SESSION['user']['id'] ?? null;
+            $reviewId = isset($_POST['review_id']) ? (int)$_POST['review_id'] : 0;
+            $replyText = trim($_POST['reply'] ?? '');
+
+            if (!$userId) {
+                $_SESSION['error'] = "Musíte být přihlášeni.";
+                header('Location: ../Frontend/login.php');
+                exit();
+            }
+            if ($reviewId <= 0 || empty($replyText)) {
+                $_SESSION['error'] = "Chybí odpověď nebo ID recenze.";
+                header('Location: ../Frontend/articles_overview.php');
+                exit();
+            }
+
+            $review = select('post_reviews', 'id, post_id, reviewer_id', "id = $reviewId");
+            if (empty($review)) {
+                $_SESSION['error'] = "Recenze nenalezena.";
+                header('Location: ../Frontend/articles_overview.php');
+                exit();
+            }
+            $postId = (int)$review[0]['post_id'];
+            $post = select('posts', 'user_id, title', "id = $postId");
+            if (empty($post) || (int)$post[0]['user_id'] !== (int)$userId) {
+                $_SESSION['error'] = "Nemáte oprávnění reagovat na tuto recenzi.";
+                header('Location: ../Frontend/articles_overview.php');
+                exit();
+            }
+
+            $updateData = [
+                'author_comment' => $replyText,
+                'author_comment_at' => date('Y-m-d H:i:s')
+            ];
+            $updated = update('post_reviews', $updateData, "id = $reviewId");
+
+            if ($updated) {
+                $articleTitle = $post[0]['title'] ?? ("Článek #$postId");
+                $reviewerId = (int)$review[0]['reviewer_id'];
+                $msg = sprintf('Autor přidal reakci k vaší recenzi článku "%s".', $articleTitle);
+                createNotification($reviewerId, $msg, 'author_reply', $postId, $userId);
+
+                // Informovat zadavatele (assigned_by) pokud existuje
+                $assignmentOwner = select('post_assignments', 'assigned_by', "post_id = $postId AND reviewer_id = $reviewerId");
+                if (!empty($assignmentOwner) && !empty($assignmentOwner[0]['assigned_by'])) {
+                    $ownerId = (int)$assignmentOwner[0]['assigned_by'];
+                    $msgOwner = sprintf('Autor reagoval na recenzi článku "%s".', $articleTitle);
+                    createNotification($ownerId, $msgOwner, 'author_reply', $postId, $userId);
+                }
+
+                $reviewerContact = select('users', 'email, username', "id = $reviewerId");
+                if (!empty($reviewerContact) && !empty($reviewerContact[0]['email'])) {
+                    $link = buildFrontendUrl("/Frontend/review_article.php?id={$postId}");
+                    $body = "Dobrý den,\n\nautor přidal reakci k vaší recenzi článku \"{$articleTitle}\".\nReakci si můžete přečíst zde: {$link}\n\nRedakce RSP";
+                    sendEmail($reviewerContact[0]['email'], 'Autor reagoval na vaši recenzi', $body, $reviewerId);
+                }
+                $_SESSION['success'] = "Reakce byla uložena a recenzent byl upozorněn.";
+            } else {
+                $_SESSION['error'] = "Nepodařilo se uložit reakci.";
+            }
+            header("Location: ../Frontend/article_feedback.php?id=$postId");
+            break;
+
+        case 'assign_reviewer_direct':
+            $userId = $_SESSION['user']['id'] ?? null;
+            $postId = isset($_POST['post_id']) ? (int)$_POST['post_id'] : 0;
+            $reviewerId = isset($_POST['reviewer_id']) ? (int)$_POST['reviewer_id'] : 0;
+            $dueDate = !empty($_POST['due_date']) ? $_POST['due_date'] : null;
+
+            if (!$userId || !in_array($_SESSION['user']['role_id'] ?? null, [1, 2])) {
+                $_SESSION['error'] = "Nemáte oprávnění přiřazovat recenzenty.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+
+            if ($postId <= 0 || $reviewerId <= 0) {
+                $_SESSION['error'] = "Chybí článek nebo recenzent.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+
+            // Zabránit duplicitám
+            $existing = select('post_assignments', 'id', "post_id = $postId AND reviewer_id = $reviewerId");
+            if (!empty($existing)) {
+                $_SESSION['error'] = "Recenzent už je k článku přiřazen.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+
+            $assignmentData = [
+                'post_id' => $postId,
+                'reviewer_id' => $reviewerId,
+                'assigned_by' => $userId,
+                'assigned_at' => date('Y-m-d H:i:s'),
+                'due_date' => $dueDate ? date('Y-m-d', strtotime($dueDate)) : null,
+                'status' => 'Přiděleno'
+            ];
+            $inserted = insert($assignmentData, 'post_assignments');
+
+            if ($inserted) {
+                $articleTitle = select('posts', 'title', "id = $postId")[0]['title'] ?? ("Článek #$postId");
+                $msg = sprintf('Byl vám přidělen článek "%s" k recenzi.', $articleTitle);
+                createNotification($reviewerId, $msg, 'assignment', $postId, $userId);
+                $_SESSION['success'] = "Recenzent byl přiřazen.";
+            } else {
+                $_SESSION['error'] = "Nepodařilo se přiřadit recenzenta.";
+            }
+            header('Location: ../Frontend/staff_management.php');
+            break;
+
+        case 'remove_reviewer_assignment':
+            $userId = $_SESSION['user']['id'] ?? null;
+            $assignmentId = isset($_POST['assignment_id']) ? (int)$_POST['assignment_id'] : 0;
+
+            if (!$userId || !in_array($_SESSION['user']['role_id'] ?? null, [1, 2])) {
+                $_SESSION['error'] = "Nemáte oprávnění mazat přiřazení.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+            if ($assignmentId <= 0) {
+                $_SESSION['error'] = "Chybí ID přiřazení.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+            $assignment = select('post_assignments', '*', "id = $assignmentId");
+            if (empty($assignment)) {
+                $_SESSION['error'] = "Přiřazení nenalezeno.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+
+            $deleted = delete('post_assignments', "id = $assignmentId");
+            if ($deleted) {
+                $_SESSION['success'] = "Přiřazení bylo odstraněno.";
+            } else {
+                $_SESSION['error'] = "Nepodařilo se odstranit přiřazení.";
+            }
+            header('Location: ../Frontend/staff_management.php');
             break;
             
         default:
