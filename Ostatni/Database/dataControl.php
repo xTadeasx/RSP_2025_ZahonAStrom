@@ -6,18 +6,36 @@ function insert($data, $table)
 {
     global $conn;
 
-    $columns = implode(", ", array_keys($data));
-    $placeholders = implode(", ", array_fill(0, count($data), "?"));
-    $values = array_values($data);
+    // Filtrovat pouze NULL hodnoty - prázdné stringy ponecháme
+    // NULL hodnoty nebudou zahrnuty do INSERT (použije se DEFAULT z databáze)
+    $filteredData = [];
+    foreach ($data as $key => $value) {
+        if ($value !== null) {
+            $filteredData[$key] = $value;
+        }
+    }
+    
+    // Pokud jsou všechna data NULL, použijeme původní data (pro případ, že chceme explicitně vložit NULL)
+    if (empty($filteredData) && !empty($data)) {
+        // Všechny hodnoty jsou NULL - použijeme původní strukturu, ale musíme použít speciální způsob
+        // Pro teď použijeme původní data a necháme MySQL použít DEFAULT
+        $filteredData = $data;
+    }
 
-    $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
+    $columns = array_keys($filteredData);
+    $placeholders = array_fill(0, count($filteredData), '?');
+    $values = array_values($filteredData);
+
+    $sql = "INSERT INTO $table (" . implode(", ", $columns) . ") VALUES (" . implode(", ", $placeholders) . ")";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         die("Error preparing statement: " . $conn->error);
     }
 
-    $types = str_repeat("s", count($values)); // all as strings (you can customize this)
-    $stmt->bind_param($types, ...$values);
+    $types = str_repeat("s", count($values));
+    if (count($values) > 0) {
+        $stmt->bind_param($types, ...$values);
+    }
 
     $success = $stmt->execute();
     $stmt->close();
@@ -87,7 +105,7 @@ function validateUser($username, $password)
 {
     global $conn;
 
-    $sql = "SELECT password FROM users WHERE username = ?";
+    $sql = "SELECT id, password, password_temp FROM users WHERE username = ?";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         die("Error preparing statement: " . $conn->error);
@@ -95,14 +113,24 @@ function validateUser($username, $password)
 
     $stmt->bind_param("s", $username);
     $stmt->execute();
-    $stmt->bind_result($hashedPassword);
+    $stmt->bind_result($userId, $hashedPassword, $hashedPasswordTemp);
     if ($stmt->fetch()) {
         $stmt->close();
-        return password_verify($password, $hashedPassword);
+
+        $matchesPrimary = $hashedPassword ? password_verify($password, $hashedPassword) : false;
+        if ($matchesPrimary) {
+            return true;
+        }
+
+        $matchesTemp = $hashedPasswordTemp ? password_verify($password, $hashedPasswordTemp) : false;
+        if ($matchesTemp) {
+            return true;
+        }
     } else {
         $stmt->close();
-        return false;
     }
+
+    return false;
 }
 
 // ✅ Register new user
@@ -134,7 +162,7 @@ function registerUser($username, $password, $email = null, $phone = null)
         'password' => $hashedPassword,
         'email' => $email,
         'phone' => $phone,
-        'role_id' => 1 // role_id pro čtenáře
+        'role_id' => 6 // role_id pro čtenáře
     ];
     return insert($data, 'users');
 }

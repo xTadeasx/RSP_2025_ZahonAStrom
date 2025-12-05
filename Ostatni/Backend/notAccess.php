@@ -4,10 +4,12 @@
 // !!! KOPÍROVAT DO KAŽDÉ CHRÁNĚNÉ STRÁNKY !!!
 session_start();
 if(!isset($_POST['password'])) {
-    if (!isset($_SESSION['user']['username'])) {
-        $_SESSION['error'] = "Musíte být přihlášeni.";
-        header("Location: ../Frontend/index.php");
-        exit();
+    if (!isset($_POST['email'])) {
+        if (!isset($_SESSION['user']['username'])) {
+            $_SESSION['error'] = "Musíte být přihlášeni.";
+            header("Location: ../Frontend/index.php");
+            exit();
+        }
     }
 }
 // Tadeášovo králoství

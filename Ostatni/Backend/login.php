@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/notAccess.php'; // !!! KOPÍROVAT DO KAŽDÉ CHRÁNĚNÉ STRÁNKY !!!
 require_once __DIR__ . '/../Database/dataControl.php'; // Připojení k DB a funkce pro práci s daty 
-
+require_once __DIR__ . '/sendEmail.php'; // Funkce pro odesílání emailů
 // To do: Vytvořit způsob přihlašování uživatele
 if(select('users_roles', '*', "role = 'Čtenář'") == []) {
     createUserRoles();
@@ -15,11 +15,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Přihlášení uživatele
         if (validateUser($username, $password)) {
             // Úspěšné přihlášení
-            $user = select('users', 'id, email, phone', "username = '$username'")[0];
+            $user = select('users', 'id, email, phone, role_id', "username = '$username'")[0];
             $_SESSION['user']['username'] = $username;
             $_SESSION['user']['id'] = $user['id'];
             $_SESSION['user']['email'] = $user['email'];
             $_SESSION['user']['phone'] = $user['phone'];
+            $_SESSION['user']['role_id'] = $user['role_id'] ?? null;
             $_SESSION['success'] = "Přihlášení bylo úspěšné.";
             header('Location: ../Frontend/index.php'); // Přesměrování na index
             exit();
@@ -38,6 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error'] = "Uživatelské jméno již existuje.";
             header('Location: ../Frontend/login.php'); // Přesměrování zpátky na login
         }
+    } elseif ($_POST['action'] === 'reset_password') {
+        $email = $_POST['email'] ?? '';
+        sendEmailResetPassword($email);
+        header('Location: ../Frontend/login.php'); // Přesměrování zpátky na login
     }
 }
 ?>
