@@ -218,6 +218,39 @@ form .actions{margin-top:12px}
   .notification-label{display:inline}
   .chat-layout{grid-template-columns:1fr;grid-template-rows:auto}
   .chat-column{max-height:none}
+  .team{grid-template-columns:1fr}
+  .hero{padding:24px}
+  .hero h1{font-size:28px}
+  .article-hero{padding:16px}
+  .article-title{font-size:1.5rem}
+  .member-card{flex-direction:column;align-items:center;text-align:center}
+  .member-body{width:100%;align-items:center}
+}
+
+@media (max-width: 768px){
+  /* Responzivní tabulky - horizontální scroll */
+  table{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;width:100%}
+  table thead{display:table-header-group}
+  table tbody{display:table-row-group}
+  table tr{display:table-row}
+  table td,table th{display:table-cell;white-space:nowrap;min-width:100px}
+  /* Grid formuláře */
+  .filter-form-grid{grid-template-columns:1fr !important}
+  .filter-buttons{flex-direction:column}
+  .filter-buttons a,.filter-buttons button{width:100%}
+  /* Flexbox formuláře */
+  form[style*="display:flex"]{flex-direction:column !important}
+  form[style*="display:grid"]{grid-template-columns:1fr !important}
+  /* Gridy s auto-fit */
+  div[style*="grid-template-columns: repeat(auto-fit"]{grid-template-columns:1fr !important}
+  div[style*="grid-template-columns:repeat(auto-fit"]{grid-template-columns:1fr !important}
+  /* Select a input v formulářích */
+  select[style*="min-width"]{min-width:100% !important;width:100% !important}
+  /* Formuláře s flex-wrap */
+  form[style*="flex-wrap"]{flex-direction:column !important}
+  /* Meta informace */
+  .article-meta{flex-wrap:wrap;gap:4px}
+  .card .meta{flex-wrap:wrap;gap:4px}
 }
 
 @media (max-width: 400px){
@@ -226,6 +259,12 @@ form .actions{margin-top:12px}
   .section{margin:16px 0}
   .section-body{padding:12px}
   .cards{grid-template-columns:1fr;gap:12px}
+  .hero{padding:18px}
+  .hero h1{font-size:24px}
+  .section-title{font-size:1.1rem;padding:10px 12px}
+  .btn{width:100%;text-align:center}
+  .header-actions{flex-direction:column;width:100%;gap:8px}
+  .header-actions .btn{width:100%}
 }
 
 /* Článek */
@@ -235,7 +274,7 @@ form .actions{margin-top:12px}
 .article-perex{color:var(--muted);margin:0 0 8px}
 .article-meta{color:var(--muted);display:flex;gap:8px;align-items:center}
 .article-body{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
-.article-footer{display:flex;justify-content:flex-end;margin-top:12px}
+.article-footer{display:flex;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;gap:8px}
 
 /* Jednoduchá typografie pro obsah */
 .prose h2{margin-top:14px;margin-bottom:8px}
@@ -258,4 +297,32 @@ form .actions{margin-top:12px}
 .member-body .feature-link{margin-top:auto}
 
 .author-head{display:flex;gap:12px;align-items:center}
+
+/* Responzivní utility třídy */
+@media (max-width: 768px){
+  .d-flex{flex-direction:column !important}
+  .d-flex.gap-3{gap:12px !important}
+  .header-actions{flex-direction:column;width:100%}
+  .header-actions > *{width:100%}
+  .navbar-nav{flex-direction:column}
+  .navbar-nav .nav-link{padding:8px 0}
+  /* Obrázky v článcích */
+  img{max-width:100%;height:auto}
+  /* Formuláře */
+  form .actions{flex-direction:column}
+  form .actions .btn{width:100%}
+  /* Flexbox s gap */
+  div[style*="display:flex"][style*="gap"]{flex-wrap:wrap}
+  /* Gridy s více sloupci */
+  div[style*="grid-template-columns: repeat"]{grid-template-columns:1fr !important}
+}
+
+@media (max-width: 400px){
+  input[type="text"],input[type="email"],input[type="password"],textarea,select{font-size:16px}
+  .btn{font-size:14px;padding:10px 16px}
+  h1{font-size:1.5rem}
+  h2{font-size:1.3rem}
+  h3{font-size:1.1rem}
+  h5{font-size:1rem}
+}
 

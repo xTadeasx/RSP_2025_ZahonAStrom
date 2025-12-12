@@ -28,57 +28,95 @@ try {
 }
 
 // Přehled počtů podle stavů (pro hosty jen schválené)
+// Nenačítáme statistiky, pokud je aktivní filtr podle autora
 $stateSummary = [];
 $totalAll = 0;
-try {
-    if (in_array($userRoleId, [1, 2, 4])) {
-        $summarySql = "SELECT w.state AS name, COUNT(*) AS total
-                       FROM posts p
-                       LEFT JOIN workflow w ON p.state = w.id
-                       GROUP BY w.state
-                       ORDER BY w.state";
-    } elseif ($userRoleId == 3) {
-        // Recenzent – jen přiřazené články
-        $summarySql = "SELECT w.state AS name, COUNT(*) AS total
-                       FROM posts p
-                       INNER JOIN post_assignments pa ON p.id = pa.post_id
-                       LEFT JOIN workflow w ON p.state = w.id
-                       WHERE pa.reviewer_id = " . (int)$userId . "
-                       GROUP BY w.state
-                       ORDER BY w.state";
-    } elseif ($userRoleId == 5) {
-        // Autor – jen vlastní články
-        $summarySql = "SELECT w.state AS name, COUNT(*) AS total
-                       FROM posts p
-                       LEFT JOIN workflow w ON p.state = w.id
-                       WHERE p.user_id = " . (int)$userId . "
-                       GROUP BY w.state
-                       ORDER BY w.state";
-    } else {
-        // Host: jen schválené
-        $summarySql = "SELECT w.state AS name, COUNT(*) AS total
-                       FROM posts p
-                       LEFT JOIN workflow w ON p.state = w.id
-                       WHERE w.state = 'Schválen'
-                       GROUP BY w.state
-                       ORDER BY w.state";
-    }
-    $summaryResult = $conn->query($summarySql);
-    if ($summaryResult && $summaryResult->num_rows > 0) {
-        while ($row = $summaryResult->fetch_assoc()) {
-            $stateName = $row['name'] ?: 'Nezadáno';
-            $stateSummary[$stateName] = (int)$row['total'];
-            $totalAll += (int)$row['total'];
+if ($filterAuthorId === null || $filterAuthorId <= 0) {
+    try {
+        if (in_array($userRoleId, [1, 2, 4])) {
+            $summarySql = "SELECT w.state AS name, COUNT(*) AS total
+                           FROM posts p
+                           LEFT JOIN workflow w ON p.state = w.id
+                           GROUP BY w.state
+                           ORDER BY w.state";
+        } elseif ($userRoleId == 3) {
+            // Recenzent – jen přiřazené články
+            $summarySql = "SELECT w.state AS name, COUNT(*) AS total
+                           FROM posts p
+                           INNER JOIN post_assignments pa ON p.id = pa.post_id
+                           LEFT JOIN workflow w ON p.state = w.id
+                           WHERE pa.reviewer_id = " . (int)$userId . "
+                           GROUP BY w.state
+                           ORDER BY w.state";
+        } elseif ($userRoleId == 5) {
+            // Autor – jen vlastní články
+            $summarySql = "SELECT w.state AS name, COUNT(*) AS total
+                           FROM posts p
+                           LEFT JOIN workflow w ON p.state = w.id
+                           WHERE p.user_id = " . (int)$userId . "
+                           GROUP BY w.state
+                           ORDER BY w.state";
+        } else {
+            // Host: jen schválené
+            $summarySql = "SELECT w.state AS name, COUNT(*) AS total
+                           FROM posts p
+                           LEFT JOIN workflow w ON p.state = w.id
+                           WHERE w.state = 'Schválen'
+                           GROUP BY w.state
+                           ORDER BY w.state";
         }
+        $summaryResult = $conn->query($summarySql);
+        if ($summaryResult && $summaryResult->num_rows > 0) {
+            while ($row = $summaryResult->fetch_assoc()) {
+                $stateName = $row['name'] ?: 'Nezadáno';
+                $stateSummary[$stateName] = (int)$row['total'];
+                $totalAll += (int)$row['total'];
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Chyba při načítání přehledu stavů: " . $e->getMessage());
     }
-} catch (Exception $e) {
-    error_log("Chyba při načítání přehledu stavů: " . $e->getMessage());
 }
 
 // Načtení článků podle role
 $articles = [];
 $pageTitle = "Přehled článků";
 $totalCount = 0;
+
+// Pokud je filtrováno podle autora, načteme jméno autora pro nadpis
+$authorName = null;
+if ($filterAuthorId !== null && $filterAuthorId > 0) {
+    try {
+        $authorQuery = "SELECT username, email FROM users WHERE id = " . (int)$filterAuthorId;
+        $authorResult = $conn->query($authorQuery);
+        if ($authorResult && $authorResult->num_rows > 0) {
+            $authorRow = $authorResult->fetch_assoc();
+            // Určení zobrazovaného jména
+            if (!empty($authorRow['email'])) {
+                $emailParts = explode('@', $authorRow['email']);
+                if (!empty($emailParts[0])) {
+                    $nameParts = explode('.', $emailParts[0]);
+                    $authorName = '';
+                    foreach ($nameParts as $part) {
+                        $authorName .= ucfirst($part) . ' ';
+                    }
+                    $authorName = trim($authorName);
+                }
+            }
+            if (empty($authorName) && !empty($authorRow['username'])) {
+                $username = str_replace('_', ' ', $authorRow['username']);
+                $parts = explode(' ', $username);
+                $authorName = '';
+                foreach ($parts as $part) {
+                    $authorName .= ucfirst($part) . ' ';
+                }
+                $authorName = trim($authorName);
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Chyba při načítání jména autora: " . $e->getMessage());
+    }
+}
 
 try {
     if ($userRoleId == 3) {
@@ -310,10 +348,15 @@ function getStateColor($state) {
 
 <div class="section">
     <div class="section-title">
-        <h1 style="margin: 0;"><?= e($pageTitle) ?></h1>
+        <h1 style="margin: 0;">
+            <?= e($pageTitle) ?>
+            <?php if ($authorName !== null): ?>
+                - <?= e($authorName) ?>
+            <?php endif; ?>
+        </h1>
     </div>
     <div class="section-body">
-        <?php if (!empty($stateSummary)): ?>
+        <?php if (($filterAuthorId === null || $filterAuthorId <= 0) && !empty($stateSummary)): ?>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px;">
                 <div style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);">
                     <div style="font-size: 0.85rem; color: var(--muted);">Celkem</div>
@@ -328,75 +371,79 @@ function getStateColor($state) {
             </div>
         <?php endif; ?>
 
-        <!-- Formulář pro filtry -->
-        <form method="GET" action="./articles_overview.php" style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-            <div class="filter-form-grid" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end;">
-                <div>
-                    <label for="nazev" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem;">Filtr podle názvu:</label>
-                    <input 
-                        type="text" 
-                        id="nazev" 
-                        name="nazev" 
-                        value="<?= e($filterTitle) ?>"
-                        placeholder="Zadejte název článku..."
-                        style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box;"
-                    >
+        <?php if ($filterAuthorId === null || $filterAuthorId <= 0): ?>
+            <!-- Formulář pro filtry -->
+            <form method="GET" action="./articles_overview.php" style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                <div class="filter-form-grid" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end;">
+                    <div>
+                        <label for="nazev" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem;">Filtr podle názvu:</label>
+                        <input 
+                            type="text" 
+                            id="nazev" 
+                            name="nazev" 
+                            value="<?= e($filterTitle) ?>"
+                            placeholder="Zadejte název článku..."
+                            style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box;"
+                        >
+                    </div>
+                    <div>
+                        <label for="stav" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem;">Filtr podle stavu:</label>
+                        <select 
+                            id="stav" 
+                            name="stav" 
+                            style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; box-sizing: border-box;"
+                        >
+                            <option value="">Všechny stavy</option>
+                            <?php foreach ($workflowStates as $state): ?>
+                                <option value="<?= $state['id'] ?>" <?= $filterState == $state['id'] ? 'selected' : '' ?>>
+                                    <?= e($state['state']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="filter-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="submit" class="btn" style="background: var(--brand); color: white; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                            🔍 Filtrovat
+                        </button>
+                        <a href="./articles_overview.php" class="btn" style="background: var(--muted); color: white; padding: 8px 20px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: 600; white-space: nowrap;">
+                            🔄 Reset filtrů
+                        </a>
+                    </div>
                 </div>
-                <div>
-                    <label for="stav" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem;">Filtr podle stavu:</label>
-                    <select 
-                        id="stav" 
-                        name="stav" 
-                        style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; box-sizing: border-box;"
-                    >
-                        <option value="">Všechny stavy</option>
-                        <?php foreach ($workflowStates as $state): ?>
-                            <option value="<?= $state['id'] ?>" <?= $filterState == $state['id'] ? 'selected' : '' ?>>
-                                <?= e($state['state']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="filter-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button type="submit" class="btn" style="background: var(--brand); color: white; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap;">
-                        🔍 Filtrovat
-                    </button>
-                    <a href="./articles_overview.php" class="btn" style="background: var(--muted); color: white; padding: 8px 20px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: 600; white-space: nowrap;">
-                        🔄 Reset
-                    </a>
-                </div>
-            </div>
-            <?php if ($filterState !== null && $filterState > 0 || !empty($filterTitle)): ?>
-                <div style="margin-top: 12px; padding: 8px 12px; background: var(--bg); border-radius: 6px; font-size: 0.875rem; color: var(--muted);">
-                    <strong>Aktivní filtry:</strong>
-                    <?php if (!empty($filterTitle)): ?>
-                        <span style="background: var(--brand); color: white; padding: 2px 8px; border-radius: 4px; margin-left: 6px;">
-                            Název: "<?= e($filterTitle) ?>"
-                        </span>
-                    <?php endif; ?>
-                    <?php if ($filterState !== null && $filterState > 0): ?>
-                        <?php 
-                        $selectedState = null;
-                        foreach ($workflowStates as $state) {
-                            if ($state['id'] == $filterState) {
-                                $selectedState = $state['state'];
-                                break;
-                            }
-                        }
-                        ?>
-                        <?php if ($selectedState): ?>
+                <?php if ($filterState !== null && $filterState > 0 || !empty($filterTitle)): ?>
+                    <div style="margin-top: 12px; padding: 8px 12px; background: var(--bg); border-radius: 6px; font-size: 0.875rem; color: var(--muted);">
+                        <strong>Aktivní filtry:</strong>
+                        <?php if (!empty($filterTitle)): ?>
                             <span style="background: var(--brand); color: white; padding: 2px 8px; border-radius: 4px; margin-left: 6px;">
-                                Stav: <?= e($selectedState) ?>
+                                Název: "<?= e($filterTitle) ?>"
                             </span>
                         <?php endif; ?>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
-        </form>
+                        <?php if ($filterState !== null && $filterState > 0): ?>
+                            <?php 
+                            $selectedState = null;
+                            foreach ($workflowStates as $state) {
+                                if ($state['id'] == $filterState) {
+                                    $selectedState = $state['state'];
+                                    break;
+                                }
+                            }
+                            ?>
+                            <?php if ($selectedState): ?>
+                                <span style="background: var(--brand); color: white; padding: 2px 8px; border-radius: 4px; margin-left: 6px;">
+                                    Stav: <?= e($selectedState) ?>
+                                </span>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+            </form>
+        <?php endif; ?>
         
         <?php if (empty($articles)): ?>
             <p style="color: var(--muted); padding: 20px; text-align: center;">
-                <?php if ($filterState !== null && $filterState > 0 || !empty($filterTitle)): ?>
+                <?php if ($filterAuthorId !== null && $filterAuthorId > 0): ?>
+                    Tento autor zatím nemá žádné články.
+                <?php elseif ($filterState !== null && $filterState > 0 || !empty($filterTitle)): ?>
                     Žádné články neodpovídají zadaným filtrům.
                     <a href="./articles_overview.php" style="color: var(--brand); text-decoration: underline; margin-left: 8px;">
                         Zobrazit všechny články

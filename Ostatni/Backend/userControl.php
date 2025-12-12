@@ -8,8 +8,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     switch ($_POST['action']) {
         case 'edit_user':
             // Zajistíme nové sloupce, pokud chybí
-            $conn->query("ALTER TABLE users ADD COLUMN bio TEXT NULL");
-            $conn->query("ALTER TABLE users ADD COLUMN avatar_path VARCHAR(255) NULL");
+            $result = $conn->query("SHOW COLUMNS FROM users LIKE 'bio'");
+            if ($result->num_rows == 0) {
+                $conn->query("ALTER TABLE users ADD COLUMN bio TEXT NULL");
+            }
+            $result = $conn->query("SHOW COLUMNS FROM users LIKE 'avatar_path'");
+            if ($result->num_rows == 0) {
+                $conn->query("ALTER TABLE users ADD COLUMN avatar_path VARCHAR(255) NULL");
+            }
 
             $id = $_SESSION['user']['id'] ?? null;
             $username = trim($_POST['username'] ?? '');
