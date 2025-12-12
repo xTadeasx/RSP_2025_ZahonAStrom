@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/notAccess.php';
+require_once __DIR__ . '/notAccess.php'; // pouze session start, veřejné stránky neblokujeme
 require_once __DIR__ . '/../Database/dataControl.php';
 require_once __DIR__ . '/../Database/db.php';
 require_once __DIR__ . '/sendEmail.php';
@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $keywords = trim($_POST['keywords'] ?? '');
             $topic = trim($_POST['topic'] ?? '');
             $authors = trim($_POST['authors'] ?? '');
+            $issueId = isset($_POST['issue_id']) && (int)$_POST['issue_id'] > 0 ? (int)$_POST['issue_id'] : null;
             
             if (empty($title)) {
                 $_SESSION['error'] = "Název článku je povinný.";
@@ -61,6 +62,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $workflowState = $workflow[0]['id'];
             }
             
+            // Zajistit sloupce pro obrázek a issue_id (idempotentně)
+            try {
+                $conn->query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS issue_id INT NULL");
+            } catch (Exception $e) {
+                // pokud sloupec existuje, ignorujeme
+            }
+            try {
+                $conn->query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS image_path VARCHAR(255) NULL");
+            } catch (Exception $e) {
+                // pokud sloupec existuje, ignorujeme
+            }
+
             // Zpracování nahrání souboru
             $filePath = null;
             if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
@@ -113,6 +126,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
+            // Nahrání obrázku (volitelné)
+            $imagePath = null;
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $imgDir = __DIR__ . '/../uploads/images/';
+                if (!is_dir($imgDir)) {
+                    mkdir($imgDir, 0755, true);
+                }
+                $img = $_FILES['image'];
+                $ext = strtolower(pathinfo($img['name'], PATHINFO_EXTENSION));
+                $allowedImg = ['jpg','jpeg','png','webp'];
+                if (in_array($ext, $allowedImg)) {
+                    $safeName = uniqid('article_img_', true) . '.' . $ext;
+                    $target = $imgDir . $safeName;
+                    if (move_uploaded_file($img['tmp_name'], $target)) {
+                        $imagePath = 'uploads/images/' . $safeName;
+                    }
+                }
+            }
+
             // Příprava dat pro vložení
             $postData = [
                 'title' => $title,
@@ -121,6 +153,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'keywords' => !empty($keywords) ? $keywords : null,
                 'topic' => !empty($topic) ? $topic : null,
                 'authors' => !empty($authors) ? $authors : null,
+                'issue_id' => $issueId,
+                'image_path' => $imagePath,
                 'file_path' => $filePath,
                 'user_id' => $userId,
                 'state' => $workflowState,
@@ -135,6 +169,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($result) {
                 $_SESSION['success'] = "Článek byl úspěšně vytvořen." . ($filePath ? " Soubor byl nahrán." : "");
+                // Log
+                insert([
+                    'user_id' => $userId,
+                    'event_type' => 'post_create',
+                    'level' => 'info',
+                    'message' => sprintf('Uživatel %d vytvořil článek "%s"', $userId, $title)
+                ], 'system_logs');
                 header('Location: ../Frontend/user.php');
             } else {
                 // Pokud se vložení nezdařilo a soubor byl nahrán, smažeme ho
@@ -172,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             // Ověření, že článek existuje
-            $existingArticle = select('posts', 'id, title, file_path, user_id, state', "id = $articleId");
+            $existingArticle = select('posts', 'id, title, file_path, image_path, user_id, state', "id = $articleId");
             if (empty($existingArticle)) {
                 $_SESSION['error'] = "Článek nebyl nalezen.";
                 header('Location: ../Frontend/articles_overview.php');
@@ -190,6 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $topic = trim($_POST['topic'] ?? '');
             $authors = trim($_POST['authors'] ?? '');
             $state = isset($_POST['state']) ? (int)$_POST['state'] : null;
+            $issueId = isset($_POST['issue_id']) && (int)$_POST['issue_id'] > 0 ? (int)$_POST['issue_id'] : null;
             $finalDecision = $_POST['final_decision'] ?? null;
             $finalNote = trim($_POST['final_note'] ?? '');
             
@@ -219,9 +261,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Zpracování souboru
             $currentFilePath = $existingArticle[0]['file_path'] ?? null;
+            $currentImagePath = $existingArticle[0]['image_path'] ?? null;
             $removeFile = isset($_POST['remove_file']) && $_POST['remove_file'] == '1';
             $fileChanged = false;
             $newFilePath = $currentFilePath;
+            $imageChanged = false;
+            $newImagePath = $currentImagePath;
             
             // Odstranění souboru, pokud je požadováno
             if ($removeFile && $currentFilePath) {
@@ -231,6 +276,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $newFilePath = null;
                 $fileChanged = true;
+            }
+            // Odstranění obrázku, pokud je požadováno
+            $removeImage = isset($_POST['remove_image']) && $_POST['remove_image'] == '1';
+            if ($removeImage && $currentImagePath) {
+                $imgFull = __DIR__ . '/../' . $currentImagePath;
+                if (file_exists($imgFull)) {
+                    unlink($imgFull);
+                }
+                $newImagePath = null;
+                $imageChanged = true;
             }
             
             // Nahrání nového souboru
@@ -288,6 +343,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit();
                 }
             }
+            // Nahrání nového obrázku
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $imgDir = __DIR__ . '/../uploads/images/';
+                if (!is_dir($imgDir)) {
+                    mkdir($imgDir, 0755, true);
+                }
+                $img = $_FILES['image'];
+                $ext = strtolower(pathinfo($img['name'], PATHINFO_EXTENSION));
+                $allowedImg = ['jpg','jpeg','png','webp'];
+                if (in_array($ext, $allowedImg)) {
+                    if ($currentImagePath) {
+                        $oldImg = __DIR__ . '/../' . $currentImagePath;
+                        if (file_exists($oldImg)) {
+                            unlink($oldImg);
+                        }
+                    }
+                    $safeImg = uniqid('article_img_', true) . '.' . $ext;
+                    $targetImg = $imgDir . $safeImg;
+                    if (move_uploaded_file($img['tmp_name'], $targetImg)) {
+                        $newImagePath = 'uploads/images/' . $safeImg;
+                        $imageChanged = true;
+                    }
+                }
+            }
             
             // Mapování finálního rozhodnutí na workflow stav (jen Admin/Šéfredaktor)
             if (in_array($user[0]['role_id'] ?? null, [1, 2]) && !empty($finalDecision)) {
@@ -314,6 +393,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'keywords' => !empty($keywords) ? $keywords : null,
                 'topic' => !empty($topic) ? $topic : null,
                 'authors' => !empty($authors) ? $authors : null,
+                'issue_id' => $issueId,
                 'state' => $state,
                 'updated_at' => date('Y-m-d H:i:s'),
                 'updated_by' => $userId
@@ -331,6 +411,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Přidání file_path pouze pokud se změnil
             if ($fileChanged) {
                 $updateData['file_path'] = $newFilePath;
+            }
+            if ($imageChanged) {
+                $updateData['image_path'] = $newImagePath;
             }
             
             // Aktualizace článku - použijeme přímý SQL dotaz s prepared statement pro bezpečnost
@@ -488,6 +571,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($state !== null && $state !== $previousState) {
                     handleArticleStateChange($articleId, $articleAuthorId, $previousState, $state, $articleTitle, $userId);
                 }
+
+                // Log
+                insert([
+                    'user_id' => $userId,
+                    'event_type' => 'post_update',
+                    'level' => 'info',
+                    'message' => sprintf('Uživatel %d upravil článek "%s" (ID: %d)', $userId, $title, $articleId)
+                ], 'system_logs');
 
                 $_SESSION['success'] = "Článek byl úspěšně aktualizován." . ($newReviewersAdded ? " Recenzenti byli přiřazeni a článek byl přepnut do stavu 'V recenzi'." : "");
                 header("Location: ../Frontend/edit_article.php?id=$articleId");
@@ -731,6 +822,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['success'] = "Přiřazení bylo odstraněno.";
             } else {
                 $_SESSION['error'] = "Nepodařilo se odstranit přiřazení.";
+            }
+            header('Location: ../Frontend/staff_management.php');
+            break;
+
+        case 'reassign_reviewer':
+            $userId = $_SESSION['user']['id'] ?? null;
+            $assignmentId = isset($_POST['assignment_id']) ? (int)$_POST['assignment_id'] : 0;
+            $newReviewerId = isset($_POST['new_reviewer_id']) ? (int)$_POST['new_reviewer_id'] : 0;
+
+            if (!$userId || !in_array($_SESSION['user']['role_id'] ?? null, [1, 2])) {
+                $_SESSION['error'] = "Nemáte oprávnění přerozdělovat recenzenty.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+
+            if ($assignmentId <= 0 || $newReviewerId <= 0) {
+                $_SESSION['error'] = "Chybí ID přiřazení nebo nový recenzent.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+
+            // Zjisti stávající přiřazení
+            $currentAssignment = select('post_assignments', '*', "id = $assignmentId");
+            if (empty($currentAssignment)) {
+                $_SESSION['error'] = "Přiřazení nenalezeno.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+            $postId = (int)$currentAssignment[0]['post_id'];
+            $oldReviewerId = (int)$currentAssignment[0]['reviewer_id'];
+
+            if ($oldReviewerId === $newReviewerId) {
+                $_SESSION['error'] = "Nový recenzent je stejný jako původní.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+
+            // Kontrola, zda už tento recenzent není k článku přiřazen
+            $duplicate = select('post_assignments', 'id', "post_id = $postId AND reviewer_id = $newReviewerId");
+            if (!empty($duplicate)) {
+                $_SESSION['error'] = "Tento recenzent už je k článku přiřazen.";
+                header('Location: ../Frontend/staff_management.php');
+                exit();
+            }
+
+            // Aktualizace přiřazení
+            $updateData = [
+                'reviewer_id' => $newReviewerId,
+                'assigned_by' => $userId,
+                'assigned_at' => date('Y-m-d H:i:s'),
+                'status' => 'Přiděleno'
+            ];
+            $updated = update('post_assignments', $updateData, "id = $assignmentId");
+
+            if ($updated) {
+                $articleTitle = select('posts', 'title', "id = $postId")[0]['title'] ?? ("Článek #$postId");
+                $msg = sprintf('Byl vám přidělen článek "%s" k recenzi.', $articleTitle);
+                createNotification($newReviewerId, $msg, 'assignment', $postId, $userId);
+                // Informuj i původního recenzenta, že byl odebrán (volitelné)
+                $msgOld = sprintf('Byli jste odebrán z recenze článku "%s".', $articleTitle);
+                createNotification($oldReviewerId, $msgOld, 'assignment_removed', $postId, $userId);
+                $_SESSION['success'] = "Přiřazení bylo přerozděleno.";
+            } else {
+                $_SESSION['error'] = "Nepodařilo se přerozdělit přiřazení.";
             }
             header('Location: ../Frontend/staff_management.php');
             break;

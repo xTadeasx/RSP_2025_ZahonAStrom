@@ -20,19 +20,30 @@ if ($userId) {
         <a href="clanek.php">Vytvořit nový článek</a>
     <?php endif; ?>
 </div>
-<form action="../Backend/userControl.php" method="POST">
+<form action="../Backend/userControl.php" method="POST" enctype="multipart/form-data">
     <input type="hidden" name="action" value="edit_user">
 
     <input type="hidden" name="id" value="<?php echo htmlspecialchars($_SESSION['user']['id'] ?? ''); ?>">
 
     <label for="username">Username:</label>
     <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($_SESSION['user']['username'] ?? ''); ?>" required>
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" minlength="3" required>
+    <label for="password">Password (ponechte prázdné, pokud nechcete měnit):</label>
+    <input type="password" id="password" name="password" minlength="3">
     <label for="email">Email:</label>
     <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($_SESSION['user']['email'] ?? ''); ?>" required>
-    <label for="phone">Phone:</label>
-    <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($_SESSION['user']['phone'] ?? ''); ?>" required>
+    <label for="phone">Telefon:</label>
+    <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($_SESSION['user']['phone'] ?? ''); ?>">
+
+    <label for="bio">Jedna věta o mně:</label>
+    <input type="text" id="bio" name="bio" maxlength="200" value="<?php echo htmlspecialchars($_SESSION['user']['bio'] ?? ''); ?>" placeholder="Krátké info, zobrazí se v týmu">
+
+    <label for="avatar">Profilová fotka (jpg, png, webp):</label>
+    <input type="file" id="avatar" name="avatar" accept=".jpg,.jpeg,.png,.webp">
+    <?php if (!empty($_SESSION['user']['avatar_path'])): ?>
+        <div style="margin:8px 0;">
+            <img src="../<?php echo htmlspecialchars($_SESSION['user']['avatar_path']); ?>" alt="Avatar" style="height:80px; width:80px; object-fit:cover; border-radius:50%;">
+        </div>
+    <?php endif; ?>
     <div class="actions">
         <button class="btn" type="submit">Uložit změny</button>
     </div>

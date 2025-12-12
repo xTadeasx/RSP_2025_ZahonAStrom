@@ -4,26 +4,14 @@
 <?php require_once __DIR__ . '/../Database/db.php'; ?>
 
 <?php
-// Ověření přihlášení
-if (empty($_SESSION['user']['id'])) {
-    $_SESSION['error'] = "Musíte být přihlášeni.";
-    header('Location: ./login.php');
-    exit();
-}
-
-$userId = $_SESSION['user']['id'];
+// Přehled je veřejný: nepřihlášený uživatel uvidí jen publikované (Schválen)
+$userId = $_SESSION['user']['id'] ?? null;
 $userRoleId = $_SESSION['user']['role_id'] ?? null;
-
-// Ověření oprávnění - role: Admin (1), Šéfredaktor (2), Recenzent (3), Redaktor (4), Autor (5)
-if (empty($userRoleId) || !in_array($userRoleId, [1, 2, 3, 4, 5])) {
-    $_SESSION['error'] = "Nemáte oprávnění k přístupu k přehledu článků.";
-    header('Location: ./index.php');
-    exit();
-}
 
 // Získání filtrů z GET parametrů
 $filterState = isset($_GET['stav']) ? (int)$_GET['stav'] : null;
 $filterTitle = isset($_GET['nazev']) ? trim($_GET['nazev']) : '';
+$filterAuthorId = isset($_GET['author_id']) ? (int)$_GET['author_id'] : null;
 
 // Načtení všech stavů workflow pro filtr a pro přehled
 $workflowStates = [];
@@ -39,7 +27,7 @@ try {
     error_log("Chyba při načítání stavů workflow: " . $e->getMessage());
 }
 
-// Přehled počtů podle stavů pro šéfredaktora/admina/redaktora
+// Přehled počtů podle stavů (pro hosty jen schválené)
 $stateSummary = [];
 $totalAll = 0;
 try {
@@ -58,12 +46,20 @@ try {
                        WHERE pa.reviewer_id = " . (int)$userId . "
                        GROUP BY w.state
                        ORDER BY w.state";
-    } else {
+    } elseif ($userRoleId == 5) {
         // Autor – jen vlastní články
         $summarySql = "SELECT w.state AS name, COUNT(*) AS total
                        FROM posts p
                        LEFT JOIN workflow w ON p.state = w.id
                        WHERE p.user_id = " . (int)$userId . "
+                       GROUP BY w.state
+                       ORDER BY w.state";
+    } else {
+        // Host: jen schválené
+        $summarySql = "SELECT w.state AS name, COUNT(*) AS total
+                       FROM posts p
+                       LEFT JOIN workflow w ON p.state = w.id
+                       WHERE w.state = 'Schválen'
                        GROUP BY w.state
                        ORDER BY w.state";
     }
@@ -100,6 +96,7 @@ try {
                     p.published_at,
                     p.state as post_state,
                     u.username as author_username,
+                    u.email as author_email,
                     u.id as author_id,
                     w.state as workflow_state,
                     pa.assigned_at,
@@ -114,6 +111,11 @@ try {
         // Přidání filtru podle stavu
         if ($filterState !== null && $filterState > 0) {
             $sql .= " AND p.state = " . (int)$filterState;
+        }
+
+        // Filtr podle autora (pokud dorazil parametr)
+        if ($filterAuthorId !== null && $filterAuthorId > 0) {
+            $sql .= " AND p.user_id = " . (int)$filterAuthorId;
         }
         
         // Přidání filtru podle názvu
@@ -148,6 +150,7 @@ try {
                     p.published_at,
                     p.state as post_state,
                     u.username as author_username,
+                    u.email as author_email,
                     u.id as author_id,
                     w.state as workflow_state
                 FROM posts p
@@ -158,6 +161,57 @@ try {
         // Přidání filtru podle stavu
         if ($filterState !== null && $filterState > 0) {
             $sql .= " AND p.state = " . (int)$filterState;
+        }
+
+        if ($filterAuthorId !== null && $filterAuthorId > 0) {
+            $sql .= " AND p.user_id = " . (int)$filterAuthorId;
+        }
+        
+        // Přidání filtru podle názvu
+        if (!empty($filterTitle)) {
+            $escapedTitle = $conn->real_escape_string($filterTitle);
+            $sql .= " AND p.title LIKE '%" . $escapedTitle . "%'";
+        }
+        
+        $sql .= " ORDER BY COALESCE(p.published_at, p.created_at) DESC";
+        
+        $result = $conn->query($sql);
+        if ($result) {
+            $totalCount = $result->num_rows;
+            if ($result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                    $articles[] = $row;
+                }
+            }
+        }
+    } elseif (in_array($userRoleId, [1,2,4])) {
+        // Admin, Šéfredaktor, Redaktor - všechny články
+        // Sestavení SQL dotazu s filtry - použijeme escape_string pro jednoduchost
+        $sql = "SELECT 
+                    p.id,
+                    p.title,
+                    p.abstract,
+                    p.topic,
+                    p.authors,
+                    p.created_at,
+                    p.published_at,
+                    p.state as post_state,
+                    u.username as author_username,
+                    u.email as author_email,
+                    u.id as author_id,
+                    w.state as workflow_state
+                FROM posts p
+                LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN workflow w ON p.state = w.id
+                WHERE 1=1";
+        
+        // Přidání filtru podle stavu
+        if ($filterState !== null && $filterState > 0) {
+            $sql .= " AND p.state = " . (int)$filterState;
+        }
+
+        if ($filterAuthorId !== null && $filterAuthorId > 0) {
+            $sql .= " AND p.user_id = " . (int)$filterAuthorId;
         }
         
         // Přidání filtru podle názvu
@@ -178,8 +232,7 @@ try {
             }
         }
     } else {
-        // Admin, Šéfredaktor, Redaktor - všechny články
-        // Sestavení SQL dotazu s filtry - použijeme escape_string pro jednoduchost
+        // Host: jen schválené články
         $sql = "SELECT 
                     p.id,
                     p.title,
@@ -190,26 +243,29 @@ try {
                     p.published_at,
                     p.state as post_state,
                     u.username as author_username,
+                    u.email as author_email,
                     u.id as author_id,
                     w.state as workflow_state
                 FROM posts p
                 LEFT JOIN users u ON p.user_id = u.id
                 LEFT JOIN workflow w ON p.state = w.id
-                WHERE 1=1";
-        
-        // Přidání filtru podle stavu
-        if ($filterState !== null && $filterState > 0) {
-            $sql .= " AND p.state = " . (int)$filterState;
-        }
-        
-        // Přidání filtru podle názvu
-        if (!empty($filterTitle)) {
+                WHERE w.state = 'Schválen'";
+
+        if ($filterTitle !== '') {
             $escapedTitle = $conn->real_escape_string($filterTitle);
             $sql .= " AND p.title LIKE '%" . $escapedTitle . "%'";
         }
-        
+
+        if ($filterState !== null && $filterState > 0) {
+            $sql .= " AND p.state = " . (int)$filterState;
+        }
+
+        if ($filterAuthorId !== null && $filterAuthorId > 0) {
+            $sql .= " AND p.user_id = " . (int)$filterAuthorId;
+        }
+
         $sql .= " ORDER BY COALESCE(p.published_at, p.created_at) DESC";
-        
+
         $result = $conn->query($sql);
         if ($result) {
             $totalCount = $result->num_rows;
@@ -361,6 +417,7 @@ function getStateColor($state) {
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="background: var(--bg); border-bottom: 2px solid var(--border);">
+                            <th style="padding: 12px; text-align: left; font-weight: 600; width: 80px;">ID</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600;">Název článku</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600;">Autor</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600;">Téma</th>
@@ -376,6 +433,9 @@ function getStateColor($state) {
                     <tbody>
                         <?php foreach ($articles as $article): ?>
                             <tr style="border-bottom: 1px solid var(--border);" class="article-row">
+                                <td style="padding: 12px; color: var(--muted); font-weight: 700;">
+                                    <?= (int)$article['id'] ?>
+                                </td>
                                 <td style="padding: 12px;">
                                     <strong><?= e($article['title'] ?? 'Bez názvu') ?></strong>
                                     <?php if (!empty($article['abstract'])): ?>
@@ -386,11 +446,37 @@ function getStateColor($state) {
                                 </td>
                                 <td style="padding: 12px;">
                                     <?php
-                                    $author = $article['author_username'] ?? 'Neznámý autor';
+                                    // Určení zobrazovaného jména autora
+                                    $authorDisplayName = 'Neznámý autor';
                                     if (!empty($article['authors'])) {
-                                        $author .= ', ' . $article['authors'];
+                                        $authorDisplayName = $article['authors'];
+                                    } elseif (!empty($article['author_email'])) {
+                                        // Extrahuj jméno z emailu: jmeno.prijmeni@rsp.cz -> Jméno Příjmení
+                                        $emailParts = explode('@', $article['author_email']);
+                                        if (!empty($emailParts[0])) {
+                                            $nameParts = explode('.', $emailParts[0]);
+                                            $displayName = '';
+                                            foreach ($nameParts as $part) {
+                                                $displayName .= ucfirst($part) . ' ';
+                                            }
+                                            $authorDisplayName = trim($displayName);
+                                        }
+                                    } elseif (!empty($article['author_username'])) {
+                                        // Fallback: převeď username na hezké jméno
+                                        $username = str_replace('_', ' ', $article['author_username']);
+                                        $parts = explode(' ', $username);
+                                        $displayName = '';
+                                        foreach ($parts as $part) {
+                                            $displayName .= ucfirst($part) . ' ';
+                                        }
+                                        $authorDisplayName = trim($displayName);
                                     }
-                                    echo e($author);
+                                    
+                                    if (!empty($article['author_id'])) {
+                                        echo '<a href="./articles_overview.php?author_id=' . (int)$article['author_id'] . '" style="color: var(--brand); text-decoration: underline;">' . e($authorDisplayName) . '</a>';
+                                    } else {
+                                        echo e($authorDisplayName);
+                                    }
                                     ?>
                                 </td>
                                 <td style="padding: 12px;">

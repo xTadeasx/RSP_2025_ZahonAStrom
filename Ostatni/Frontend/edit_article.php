@@ -42,9 +42,11 @@ try {
                 p.topic,
                 p.authors,
                 p.file_path,
+                p.image_path,
                 p.created_at,
                 p.published_at,
                 p.state as post_state,
+                p.issue_id,
                 p.user_id as author_id,
                 p.final_decision,
                 p.final_note,
@@ -69,7 +71,7 @@ try {
             }
         } else {
             // Fallback
-            $stmt->bind_result($id, $title, $body, $abstract, $keywords, $topic, $authors, $file_path, $created_at, $published_at, $post_state, $author_id, $author_username, $workflow_state);
+            $stmt->bind_result($id, $title, $body, $abstract, $keywords, $topic, $authors, $file_path, $image_path, $created_at, $published_at, $post_state, $issue_id, $author_id, $author_username, $workflow_state);
             if ($stmt->fetch()) {
                 $article = [
                     'id' => $id,
@@ -80,9 +82,11 @@ try {
                     'topic' => $topic,
                     'authors' => $authors,
                     'file_path' => $file_path,
+                    'image_path' => $image_path,
                     'created_at' => $created_at,
                     'published_at' => $published_at,
                     'post_state' => $post_state,
+                    'issue_id' => $issue_id,
                     'author_id' => $author_id,
                     'author_username' => $author_username,
                     'workflow_state' => $workflow_state
@@ -114,6 +118,20 @@ try {
     }
 } catch (Exception $e) {
     error_log("Chyba při načítání stavů workflow: " . $e->getMessage());
+}
+
+// Načtení vydání (issues)
+$issues = [];
+try {
+    $issuesQuery = "SELECT id, year, number, title FROM issues ORDER BY year DESC, number DESC";
+    $issuesResult = $conn->query($issuesQuery);
+    if ($issuesResult && $issuesResult->num_rows > 0) {
+        while ($row = $issuesResult->fetch_assoc()) {
+            $issues[] = $row;
+        }
+    }
+} catch (Exception $e) {
+    error_log("Chyba při načítání vydání: " . $e->getMessage());
 }
 
 // Načtení recenzentů (role_id = 3)
@@ -251,6 +269,28 @@ try {
             </div>
             
             <div style="margin-bottom: 18px;">
+                <label for="issue_id">
+                    Vydání (issue)
+                </label>
+                <select 
+                    id="issue_id" 
+                    name="issue_id"
+                    style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-top: 6px; background: white;"
+                >
+                    <option value="">-- Nepřiřazeno --</option>
+                    <?php foreach ($issues as $iss): ?>
+                        <?php
+                            $label = trim(($iss['year'] ?? '').' / '.($iss['number'] ?? '').' '.($iss['title'] ?? ''));
+                        ?>
+                        <option value="<?= (int)$iss['id'] ?>" <?= (!empty($article['issue_id']) && (int)$article['issue_id'] === (int)$iss['id']) ? 'selected' : '' ?>>
+                            <?= e($label) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <div style="font-size: 0.875rem; color: var(--muted); margin-top: 4px;">Volitelné: přiřaďte článek do vydání.</div>
+            </div>
+            
+            <div style="margin-bottom: 18px;">
                 <label for="body">
                     Obsah článku <span class="req">*</span>
                 </label>
@@ -345,6 +385,29 @@ try {
                         Můžete nahrát soubor s článkem (PDF, DOC, DOCX). Maximální velikost: 10 MB
                     <?php endif; ?>
                 </div>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label for="image">
+                    Obrázek článku (náhled)
+                </label>
+                <?php if (!empty($article['image_path'])): ?>
+                    <div style="padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; display:flex; align-items:center; gap:12px;">
+                        <img src="../<?= e($article['image_path']) ?>" alt="Obrázek článku" style="height:80px; width:120px; object-fit:cover; border-radius:6px;">
+                        <label style="margin:0; font-weight: normal;">
+                            <input type="checkbox" name="remove_image" value="1" style="margin-right: 4px;">
+                            Odstranit obrázek
+                        </label>
+                    </div>
+                <?php endif; ?>
+                <input 
+                    type="file" 
+                    id="image" 
+                    name="image" 
+                    accept=".jpg,.jpeg,.png,.webp"
+                    style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-top: 6px; background: white;"
+                >
+                <div style="font-size: 0.875rem; color: var(--muted); margin-top: 4px;">Volitelné: náhledový obrázek článku.</div>
             </div>
             
             <!-- Sekce pro přiřazení recenzentů -->

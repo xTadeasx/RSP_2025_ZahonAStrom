@@ -54,6 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($result) {
             $_SESSION['success'] = "Komentář byl přidán.";
+            insert([
+                'user_id' => $userId,
+                'event_type' => 'comment_create',
+                'level' => 'info',
+                'message' => sprintf('Uživatel %d přidal komentář k článku ID %d', $userId, $postId)
+            ], 'system_logs');
         } else {
             $_SESSION['error'] = "Nepodařilo se přidat komentář.";
         }

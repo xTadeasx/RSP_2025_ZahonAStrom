@@ -1,17 +1,8 @@
 <?php
-//ověření že pokud uživatel není přihlášen nebo neposílá údaje na přihlášení, nemůže se dostat na tuto stránku
+// Původní soubor blokoval přístup i k veřejným stránkám.
+// V projektu už používáme selektivní kontroly přihlášení v konkrétních skriptech,
+// takže zde nebudeme bránit přístupu. Necháváme jen start session.
 
-// !!! KOPÍROVAT DO KAŽDÉ CHRÁNĚNÉ STRÁNKY !!!
-session_start();
-if(!isset($_POST['password'])) {
-    if (!isset($_POST['email'])) {
-        if (!isset($_SESSION['user']['username'])) {
-            $_SESSION['error'] = "Musíte být přihlášeni.";
-            header("Location: ../Frontend/index.php");
-            exit();
-        }
-    }
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
-// Tadeášovo králoství
-
-?>

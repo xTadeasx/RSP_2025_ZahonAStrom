@@ -50,7 +50,7 @@
         <div>
           <h3 class="feature-title">Word / Google Docs</h3>
           <p class="feature-text">Základní šablona článku s nadpisy a styly odstavců.</p>
-          <a class="feature-link" href="#">Stáhnout šablonu</a>
+          <a class="feature-link" href="./download_template.php?type=word">Stáhnout šablonu</a>
         </div>
       </div>
       <div class="feature-card">
@@ -58,7 +58,7 @@
         <div>
           <h3 class="feature-title">LaTeX</h3>
           <p class="feature-text">Šablona pro Overleaf/TeX s nastavenou bibliografií.</p>
-          <a class="feature-link" href="#">Stáhnout šablonu</a>
+          <a class="feature-link" href="./download_template.php?type=latex">Stáhnout šablonu</a>
         </div>
       </div>
       <div class="feature-card">
@@ -66,7 +66,7 @@
         <div>
           <h3 class="feature-title">Práva a licence</h3>
           <p class="feature-text">Informace o licencích, sdílení dat a autorech.</p>
-          <a class="feature-link" href="#">Zobrazit podmínky</a>
+          <a class="feature-link" href="./license_terms.php">Zobrazit podmínky</a>
         </div>
       </div>
     </div>

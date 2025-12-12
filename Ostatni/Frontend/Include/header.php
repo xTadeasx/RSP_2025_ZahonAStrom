@@ -52,6 +52,13 @@ $showReviewerNotifications = !empty($userRoleId) && (int)$userRoleId === 3;
                             </a>
                         </li>
                     <?php endif; ?>
+                    <?php if (in_array($userRoleId, [1, 2])): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./staff_management.php" style="color: #ffc107; font-weight: 600; background: rgba(255, 193, 7, 0.15); border-radius: 4px; padding: 4px 12px !important; margin: 0 4px;">
+                                🗂️ Správa týmu
+                            </a>
+                        </li>
+                    <?php endif; ?>
                 </ul>
                 <div class="d-flex align-items-center gap-3 header-actions">
                     <?php if ($showReviewerNotifications): ?>

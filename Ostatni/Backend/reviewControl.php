@@ -253,6 +253,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $result = insert($reviewData, 'post_reviews');
                 
                 if ($result) {
+                        // Log
+                        insert([
+                            'user_id' => $userId,
+                            'event_type' => 'review_create',
+                            'level' => 'info',
+                            'message' => sprintf('Recenzent %d vytvořil recenzi k článku ID %d', $userId, $articleId)
+                        ], 'system_logs');
+
                     // Aktualizace statusu přiřazení na "Recenzováno"
                     $updateAssignmentSql = "UPDATE post_assignments SET status = ? WHERE post_id = ? AND reviewer_id = ?";
                     $updateAssignmentStmt = $conn->prepare($updateAssignmentSql);

@@ -126,6 +126,20 @@ if ($userId) {
                 >
                 <div style="font-size: 0.875rem; color: var(--muted); margin-top: 4px;">Můžete nahrát soubor s článkem (PDF, DOC, DOCX). Maximální velikost: 10 MB</div>
             </div>
+
+            <div style="margin-bottom: 18px;">
+                <label for="image">
+                    Obrázek článku (náhled)
+                </label>
+                <input 
+                    type="file" 
+                    id="image" 
+                    name="image" 
+                    accept=".jpg,.jpeg,.png,.webp"
+                    style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-top: 6px; background: white;"
+                >
+                <div style="font-size: 0.875rem; color: var(--muted); margin-top: 4px;">Volitelné: náhledový obrázek článku.</div>
+            </div>
             
             <div class="actions">
                 <button type="submit" style="background: var(--brand); color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Odeslat článek</button>

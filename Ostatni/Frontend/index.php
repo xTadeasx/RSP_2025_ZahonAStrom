@@ -4,23 +4,12 @@
 <?php require_once __DIR__ . '/../Database/db.php'; ?>
 
 <?php
-// Načtení článků z databáze
-// Zobrazujeme články se stavy: Nový (1), Odeslaný (2), V recenzi (3), Schválen (5)
 $posts = [];
 
 try {
-    // SQL dotaz s JOIN pro získání článků s autory
-    // Zobrazujeme články, které by měly být viditelné:
-    // - Nový (1), Odeslaný (2), V recenzi (3), Schválen (5)
-    // NEZobrazujeme: Vrácen k úpravám (4), Zamítnut (6)
-    // Pro produkci můžete změnit na: WHERE p.state = 5 (jen schválené)
-    
-    // Povolené stavy pro zobrazení na indexu
-    // 1 = Nový, 2 = Odeslaný, 3 = V recenzi, 5 = Schválen
-    // NEZobrazujeme: 4 = Vrácen k úpravám, 6 = Zamítnut
-    $allowedStates = [1, 2, 3, 5];
-    
-    // Vytvoření placeholders pro IN klauzuli
+    // Zobrazujeme jen publikované/schválené články (workflow "Schválen")
+    // Ve schématu je "Schválen" s id 6 (viz seed).
+    $allowedStates = [6];
     $placeholders = implode(',', array_fill(0, count($allowedStates), '?'));
     
     $sql = "SELECT 
@@ -32,7 +21,9 @@ try {
                 p.created_at,
                 p.published_at,
                 p.state as post_state,
+                p.image_path,
                 u.username as author_username,
+                u.email as author_email,
                 u.id as author_id,
                 w.state as workflow_state
             FROM posts p
@@ -40,7 +31,7 @@ try {
             LEFT JOIN workflow w ON p.state = w.id
             WHERE p.state IN ($placeholders)
             ORDER BY COALESCE(p.published_at, p.created_at) DESC
-            LIMIT 10";
+            LIMIT 3";
     
     $stmt = $conn->prepare($sql);
     if ($stmt) {
@@ -67,11 +58,36 @@ try {
                     $formattedDate = 'Datum nezadáno';
                 }
                 
-                // Určení autora
-                $author = $row['author_username'] ?? 'Neznámý autor';
+                // Určení autora - použijeme skutečné jméno
+                // Pokud existuje pole authors, použij ho
                 if (!empty($row['authors'])) {
-                    // Pokud jsou uvedeni další autoři, přidáme je
-                    $author .= ', ' . $row['authors'];
+                    $author = $row['authors'];
+                } elseif (!empty($row['author_email'])) {
+                    // Pokud ne, zkus extrahovat jméno z emailu
+                    $email = $row['author_email'];
+                    // Formát: jmeno.prijmeni@rsp.cz -> Jméno Příjmení
+                    $emailParts = explode('@', $email);
+                    if (!empty($emailParts[0])) {
+                        $nameParts = explode('.', $emailParts[0]);
+                        $author = '';
+                        foreach ($nameParts as $part) {
+                            $author .= ucfirst($part) . ' ';
+                        }
+                        $author = trim($author);
+                    } else {
+                        $author = 'Neznámý autor';
+                    }
+                } elseif (!empty($row['author_username'])) {
+                    // Fallback na username (ale převedeme podtržítka na mezery a kapitalizujeme)
+                    $username = str_replace('_', ' ', $row['author_username']);
+                    $parts = explode(' ', $username);
+                    $author = '';
+                    foreach ($parts as $part) {
+                        $author .= ucfirst($part) . ' ';
+                    }
+                    $author = trim($author);
+                } else {
+                    $author = 'Neznámý autor';
                 }
                 
                 // Zkrácení abstraktu pro excerpt
@@ -80,23 +96,17 @@ try {
                     $excerpt = mb_substr($excerpt, 0, 147, 'UTF-8') . '...';
                 }
                 
-                // Zobrazení badge pro stav (pokud není schválen)
-                $stateBadge = '';
-                $workflowState = $row['workflow_state'] ?? '';
-                if ($row['post_state'] != 5) {
-                    $stateBadge = $workflowState;
-                }
-                
                 $posts[] = [
                     'id' => $row['id'],
                     'title' => $row['title'] ?? 'Bez názvu',
                     'excerpt' => $excerpt ?: 'Článek bez abstraktu.',
                     'author' => $author,
+                    'authors' => $row['authors'] ?? null,
+                    'author_email' => $row['author_email'] ?? null,
                     'date' => $formattedDate,
                     'category' => $row['topic'] ?? 'Obecné',
                     'author_id' => $row['author_id'],
-                    'state' => $workflowState,
-                    'state_badge' => $stateBadge
+                    'image_path' => $row['image_path'] ?? null
                 ];
                 }
             }
@@ -113,7 +123,9 @@ try {
                 p.created_at,
                 p.published_at,
                 p.state as post_state,
+                p.image_path,
                 u.username as author_username,
+                u.email as author_email,
                 u.id as author_id,
                 w.state as workflow_state
             FROM posts p
@@ -139,10 +151,36 @@ try {
                         $formattedDate = 'Datum nezadáno';
                     }
                     
-                    // Určení autora
-                    $author = $row['author_username'] ?? 'Neznámý autor';
+                    // Určení autora - použijeme skutečné jméno
+                    // Pokud existuje pole authors, použij ho
                     if (!empty($row['authors'])) {
-                        $author .= ', ' . $row['authors'];
+                        $author = $row['authors'];
+                    } elseif (!empty($row['author_email'])) {
+                        // Pokud ne, zkus extrahovat jméno z emailu
+                        $email = $row['author_email'];
+                        // Formát: jmeno.prijmeni@rsp.cz -> Jméno Příjmení
+                        $emailParts = explode('@', $email);
+                        if (!empty($emailParts[0])) {
+                            $nameParts = explode('.', $emailParts[0]);
+                            $author = '';
+                            foreach ($nameParts as $part) {
+                                $author .= ucfirst($part) . ' ';
+                            }
+                            $author = trim($author);
+                        } else {
+                            $author = 'Neznámý autor';
+                        }
+                    } elseif (!empty($row['author_username'])) {
+                        // Fallback na username (ale převedeme podtržítka na mezery a kapitalizujeme)
+                        $username = str_replace('_', ' ', $row['author_username']);
+                        $parts = explode(' ', $username);
+                        $author = '';
+                        foreach ($parts as $part) {
+                            $author .= ucfirst($part) . ' ';
+                        }
+                        $author = trim($author);
+                    } else {
+                        $author = 'Neznámý autor';
                     }
                     
                     // Zkrácení abstraktu pro excerpt
@@ -163,11 +201,12 @@ try {
                         'title' => $row['title'] ?? 'Bez názvu',
                         'excerpt' => $excerpt ?: 'Článek bez abstraktu.',
                         'author' => $author,
+                        'authors' => $row['authors'] ?? null,
+                        'author_email' => $row['author_email'] ?? null,
                         'date' => $formattedDate,
                         'category' => $row['topic'] ?? 'Obecné',
                         'author_id' => $row['author_id'],
-                        'state' => $workflowState,
-                        'state_badge' => $stateBadge
+                        'image_path' => $row['image_path'] ?? null
                     ];
                 }
             }
@@ -192,7 +231,7 @@ try {
                 <div>
                     <h3 class="feature-title">Široké spektrum oborů</h3>
                     <p class="feature-text">Publikujeme články z ekonomiky, technologií, zdravotnictví i společenských věd.</p>
-                    <a class="feature-link" href="#">Recenzní řízení</a>
+                    <a class="feature-link" href="./review_process.php">Recenzní řízení</a>
                 </div>
             </div>
             <div class="feature-card">
@@ -200,7 +239,7 @@ try {
                 <div>
                     <h3 class="feature-title">Důsledná recenze</h3>
                     <p class="feature-text">Každý rukopis prochází pečlivým posouzením odborníků z praxe i akademie.</p>
-                    <a class="feature-link" href="#">Zásady recenzí</a>
+                    <a class="feature-link" href="./review_guidelines.php">Zásady recenzí</a>
                 </div>
             </div>
             <div class="feature-card">
@@ -229,12 +268,22 @@ try {
             <div class="cards">
                 <?php foreach ($posts as $post): ?>
                     <article class="card">
-                        <div class="thumb"></div>
+                        <div class="thumb" style="background:#4e1835; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                            <?php if (!empty($post['image_path'])): ?>
+                                <img src="../<?= e($post['image_path']) ?>" alt="Náhled" style="width:100%; height:100%; object-fit:cover;">
+                            <?php endif; ?>
+                        </div>
                         <div class="body">
                             <h3><?= e($post['title']) ?></h3>
                             <p><?= e($post['excerpt']) ?></p>
                             <div class="meta">
-                                <span><?= e($post['author']) ?></span>
+                                <span>
+                                    <?php if (!empty($post['author_id'])): ?>
+                                        <a class="feature-link" href="./articles_overview.php?author_id=<?= (int)$post['author_id'] ?>" style="text-decoration: none; color: inherit;"><?= e($post['author']) ?></a>
+                                    <?php else: ?>
+                                        <?= e($post['author']) ?>
+                                    <?php endif; ?>
+                                </span>
                                 <span><?= e($post['date']) ?></span>
                             </div>
                             <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">
